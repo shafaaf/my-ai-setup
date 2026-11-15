@@ -1,0 +1,100 @@
+import { atom, read, update } from 'claude-code'
+import type { Register } from 'claude-code'
+
+const TITLE = "Shafaaf's Tools"
+
+const isOpen = atom({ plugin: 'my-tools', key: 'isOpen' } as const, false)
+
+// One row per mod. To add a mod: add a row here, then a case in runMod below.
+const MODS = [
+  { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts', button: 'Upgrade my draft' },
+]
+
+export const register: Register = on => {
+  on('session.start', async ($, e, next) => {
+    await $.command.register({ name: 'tools', description: `Open or close the ${TITLE} menu` })
+    return next(e)
+  })
+
+  on('command.run', { command: 'tools' }, async $ => {
+    const was = await read($, isOpen)
+    await update($, isOpen, () => !was)
+    return { text: was ? `${TITLE} closed.` : `${TITLE} opened.` }
+  })
+
+  // Terminal: the pill sits at the right of the footer line under the prompt.
+  // The desktop app never asks a mod to draw that line, so there the pill
+  // lives in the band above the prompt instead (see below).
+  on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
+    const engine = await next(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const open = await read($, isOpen)
+    return (
+      <Box flexDirection="row" justifyContent="space-between">
+        <Box flexGrow={1}>{engine}</Box>
+        <Button key="my-tools-pill" plain onPress={() => update($, isOpen, () => !open)}>
+          <Text color="warning">◆ </Text>
+          {TITLE} {open ? '▼' : '▲'}
+        </Button>
+      </Box>
+    )
+  })
+
+  // The menu box, above the prompt while open.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (e.props.hasSurvey) return next(e)
+    const open = await read($, isOpen)
+    const { Box, Button, Text } = $.ui.resolve(e)
+
+    // Closed: off the terminal, a one-line row with the pill on the right.
+    if (!open) {
+      if (e.surface === 'terminal') return next(e)
+      return (
+        <Box flexDirection="row" justifyContent="flex-end">
+          {/* The desktop app paints a button's own text white, so the colour
+              lives on the background and the glyphs around it. No border:
+              it adds two rows of height. */}
+          <Box flexDirection="row" alignItems="center" backgroundColor="#3A2A12" paddingX={1}>
+            <Text color="warning" bold>◆ </Text>
+            <Button key="my-tools-pill" plain label={TITLE} onPress={() => update($, isOpen, () => true)} />
+            <Text color="warning" bold> ▲</Text>
+          </Box>
+        </Box>
+      )
+    }
+
+    const runMod = async (key: string) => {
+      if (key === 'prompt-upgrade') {
+        const draft = (await $.prompt.read()).text.trim()
+        if (!draft) {
+          $.ui.toast('Prompt Upgrade: type a prompt in the box first.')
+          return
+        }
+        await update($, isOpen, () => false)
+        await $.command.run({ command: 'prompt-upgrade', args: draft })
+      }
+    }
+
+    return (
+      <Box flexDirection="column" borderStyle="round" borderColor="warning" paddingX={1}>
+        <Box flexDirection="row" justifyContent="space-between">
+          <Text bold color="warning">◆ {TITLE.toUpperCase().split('').join(' ')}</Text>
+          <Button key="close" plain dimColor onPress={() => update($, isOpen, () => false)}>
+            {e.surface === 'terminal' ? '[-]' : `${TITLE} ▼`}
+          </Button>
+        </Box>
+        <Text dimColor>── M O D S</Text>
+        {MODS.map(mod => (
+          <Box flexDirection="row" justifyContent="space-between">
+            <Text>
+              <Text color="success">● </Text>
+              <Text bold>{mod.name}</Text>
+              <Text dimColor>  {mod.blurb}</Text>
+            </Text>
+            <Button key={`mod-${mod.key}`} label={mod.button} onPress={() => runMod(mod.key)} />
+          </Box>
+        ))}
+      </Box>
+    )
+  })
+}

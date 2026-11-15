@@ -1,0 +1,9 @@
+{
+  "name": "my-mods",
+  "description": "Shafaaf's own Claude Code mods",
+  "owner": { "name": "Shafaaf" },
+  "plugins": [
+    { "name": "my-tools", "source": "./my-tools", "description": "A pop-out menu (Shafaaf's Tools) that holds all your mods" },
+    { "name": "prompt-upgrade", "source": "./prompt-upgrade", "description": "/prompt-upgrade <rough prompt>: diagnose a rough prompt and rewrite it into a strong one" }
+  ]
+}
