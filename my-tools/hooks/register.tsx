@@ -8,6 +8,7 @@ const isOpen = atom({ plugin: 'my-tools', key: 'isOpen' } as const, false)
 // One row per mod. To add a mod: add a row here, then a case in runMod below.
 const MODS = [
   { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts', button: 'Upgrade my draft' },
+  { key: 'notifications', name: 'Notifications', blurb: 'sessions that need you', button: 'Open' },
 ]
 
 export const register: Register = on => {
@@ -64,6 +65,21 @@ export const register: Register = on => {
     }
 
     const runMod = async (key: string) => {
+      if (key === 'notifications') {
+        // The pane belongs to cache-keeper, which registers /notifications
+        // (or /ck-notifications when the name is taken).
+        await update($, isOpen, () => false)
+        try {
+          await $.command.run({ command: 'notifications' })
+        } catch {
+          try {
+            await $.command.run({ command: 'ck-notifications' })
+          } catch {
+            $.ui.toast('Notifications needs the cache-keeper mod, which is not loaded.')
+          }
+        }
+        return
+      }
       if (key === 'prompt-upgrade') {
         const draft = (await $.prompt.read()).text.trim()
         if (!draft) {
