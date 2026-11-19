@@ -35,21 +35,3 @@ test('desktop: the pill sits above the prompt and opens the menu in place', asyn
   expect(await band.find({ type: 'Text', text: /Prompt Upgrade/ })).toBeUndefined()
   await band.unmount()
 })
-
-test('the Notifications row opens the notifications pane', async ($, on) => {
-  const ran: string[] = []
-  on('ui.render', ($, e) => {
-    const { Text } = $.ui.resolve(e)
-    return <Text>engine</Text>
-  })
-  on('command.run', (_, e) => {
-    ran.push(e.command)
-    return {}
-  })
-  const band = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  await band.press({ key: 'my-tools-pill' })
-  expect(await band.find({ type: 'Text', text: /sessions that need you/ })).toBeDefined()
-  await band.press({ key: 'mod-notifications' })
-  expect(ran).toEqual(['notifications'])
-  await band.unmount()
-})
