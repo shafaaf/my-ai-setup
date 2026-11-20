@@ -84,7 +84,10 @@ Then `/reload-plugins` in open chats.
 
 ## 2. prompt-upgrade
 
-**What it is:** you write a rough prompt; it opens a side pane, asks you a few quick questions where the prompt is vague, then writes a stronger version you can send.
+**What it is:** you write a rough prompt; it opens a side pane, asks you a few quick multiple-choice questions, then writes a stronger version you can send.
+
+- **Short prompt (under 40 words):** it always asks **3** questions first (2 at least, 4 at most).
+- **Detailed prompt (40+ words):** it asks up to 4 only if the answers would change the rewrite; otherwise it goes straight to the result.
 
 **Example:**
 

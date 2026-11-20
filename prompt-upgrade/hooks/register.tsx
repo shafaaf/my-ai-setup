@@ -80,15 +80,23 @@ const JSON_RULES = `Reply with one JSON object and nothing else (no code fences)
 
 If you need clarifying questions first, reply:
 {"questions": [{"question": "...", "options": ["...", "...", "..."]}]}
-with at most 2 questions, each with 2 to 4 short multiple-choice options. Ask only what would change the rewrite (goal, audience, constraints, budget, format).
+with 2 to 4 questions, each with 2 to 4 short multiple-choice options. Ask only what would change the rewrite (goal, audience, constraints, budget, format).
 
 Otherwise reply:
 {"diagnosis": "...", "improved_prompt": "...", "embedded_questions": "...", "key_upgrades": ["...", "..."]}
 where diagnosis is plain text (short paragraphs or "- " bullets), improved_prompt is the full copy-paste-ready prompt with the embedded clarifying questions already written into it, embedded_questions lists those questions (empty string if none), and key_upgrades has one short line per detail you added (under 60 characters each, starting with a verb).`
 
+// A short prompt leaves too much to guess: ask before rewriting, like the pane's step 2 promises
+export const SHORT_PROMPT_WORDS = 40
+const MUST_ASK = `My prompt is short, so before rewriting, ask me 3 multiple-choice clarifying questions (2 at least, 4 at most) about what would change the result most, such as goal, audience, budget, channels or format. Reply with the "questions" JSON this time, not the final result.`
+const MAY_ASK = `My prompt is fairly detailed. Ask up to 4 multiple-choice clarifying questions only if the answers would change the rewrite; otherwise deliver the result.`
+
 export function askPrompt(draft: string, questions: UpgradeQuestion[], answers: string[]): string {
   const base = buildPrompt(draft)
-  if (questions.length === 0) return `${base}\n\n${JSON_RULES}`
+  if (questions.length === 0) {
+    const words = draft.trim().split(/\s+/).filter(Boolean).length
+    return `${base}\n\n${words < SHORT_PROMPT_WORDS ? MUST_ASK : MAY_ASK}\n\n${JSON_RULES}`
+  }
   const qa = questions
     .map((q, i) => `Q: ${q.question}\nA: ${answers[i] && answers[i] !== SKIPPED ? answers[i] : '(skipped, use a [PLACEHOLDER])'}`)
     .join('\n\n')
@@ -108,7 +116,7 @@ export function parseReply(text: string, allowQuestions: boolean): Parsed {
     return { error: 'The model replied with JSON that could not be read.' }
   }
   if (allowQuestions && Array.isArray(data.questions) && data.questions.length > 0) {
-    const questions = (data.questions as unknown[]).slice(0, 2).flatMap(q => {
+    const questions = (data.questions as unknown[]).slice(0, 4).flatMap(q => {
       const one = q as { question?: unknown; options?: unknown }
       if (typeof one.question !== 'string') return []
       const options = Array.isArray(one.options)

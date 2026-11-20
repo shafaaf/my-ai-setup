@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { buildPrompt } from './register'
+import { askPrompt, buildPrompt, parseReply } from './register'
 
 const TEMPLATE = `You are a world-class prompt engineer. I will give you a rough prompt. Diagnose why it will underperform, then rewrite it into a prompt that reliably produces a dramatically better result.
 
@@ -31,4 +31,23 @@ test('Outcome, Runner and Audience lines fill their placeholders', () => {
       .replace('[e.g. ChatGPT, Claude, an app, a coding agent]', 'Claude')
       .replace('[AUDIENCE]', 'customers'),
   )
+})
+
+test('a short prompt must get multiple-choice questions before the rewrite', () => {
+  const sent = askPrompt('marketing strategy for my garments', [], [])
+  expect(sent).toContain('ask me 3 multiple-choice clarifying questions')
+  expect(sent).toContain('Reply with the "questions" JSON this time')
+})
+
+test('a detailed prompt may skip the questions', () => {
+  const long = Array.from({ length: 45 }, (_, i) => `word${i}`).join(' ')
+  const sent = askPrompt(long, [], [])
+  expect(sent).toContain('Ask up to 4 multiple-choice clarifying questions only if')
+  expect(sent).not.toContain('ask me 3 multiple-choice')
+})
+
+test('keeps up to 4 questions from the reply', () => {
+  const qs = Array.from({ length: 6 }, (_, i) => ({ question: `Q${i}?`, options: ['a', 'b'] }))
+  const parsed = parseReply(JSON.stringify({ questions: qs }), true)
+  expect('questions' in parsed && parsed.questions.length).toBe(4)
 })
