@@ -15,7 +15,6 @@ const MIN = 60000
 const TICK_MS = 5000
 const STALE_MS = 3 * MIN // a chat silent this long is skipped
 const GONE_MS = 60 * MIN // a chat silent this long has its heartbeat removed
-const FINISHED_FOR_MS = 30 * MIN // a "finished" card stays at most this long
 const DISMISS_KEEP_MS = 24 * 60 * MIN
 const SESSIONS_DIR = 'Library/Application Support/Claude/claude-code-sessions'
 
@@ -30,6 +29,9 @@ type Beat = {
   lastActivity: number
   ctx: number
   ttlMin: number
+  focusedAt: number
+  seenAt: number
+  watchedTurnEnd: number
   updatedAt: number
 }
 
@@ -53,6 +55,9 @@ const S = {
   lastTurnEnd: 0,
   lastActivity: 0,
   ctx: 0,
+  focusedAt: 0, // when you last switched to this chat (the desktop app's lastFocusedAt)
+  seenAt: 0, // the last time this chat was the one you're in
+  watchedTurnEnd: 0, // the last turn that finished while you were in this chat
 }
 
 let now = 0
@@ -113,6 +118,9 @@ function myBeat(): Beat {
     lastActivity: S.lastActivity,
     ctx: S.ctx,
     ttlMin: settings.ttlMin,
+    focusedAt: S.focusedAt,
+    seenAt: S.seenAt,
+    watchedTurnEnd: S.watchedTurnEnd,
     updatedAt: now,
   }
 }
@@ -141,13 +149,21 @@ async function readTitle($: any): Promise<void> {
     const title = data && typeof data.title === 'string' ? data.title.trim() : ''
     // the app's placeholder says nothing about the chat: keep the first prompt
     S.title = title && title !== 'New session' ? title : ''
+    if (data && typeof data.lastFocusedAt === 'number') S.focusedAt = data.lastFocusedAt
   } catch {
     // no desktop session file: keep the folder name and first prompt
   }
 }
 
+// The chat you're in is the one you switched to last
+function amFocused(): boolean {
+  if (!S.focusedAt) return false
+  return others.every((b) => now - (b.updatedAt || 0) > STALE_MS || (b.focusedAt || 0) <= S.focusedAt)
+}
+
 async function heartbeat($: any): Promise<void> {
   now = await $.clock.now()
+  if (amFocused()) S.seenAt = now
   if (S.id) await $.store.set('hb:' + S.id, myBeat())
 }
 
@@ -168,18 +184,22 @@ async function readOthers($: any): Promise<void> {
   dismissed = ((await $.store.get('dismissed')) as Record<string, number>) || {}
 }
 
+// Nothing to show for what happened while you were looking at that chat
 function alertFor(b: Beat): Alert | null {
   const name = `"${clip(b.label || b.id, 48)}"`
-  if (b.state === 'waiting') {
+  const seen = b.seenAt || 0
+  const inThatChat = now - seen < 2 * TICK_MS + 1000
+  if (b.state === 'waiting' && !inThatChat && b.waitingSince > seen) {
     return { key: `wait:${b.id}:${b.waitingSince}`, beat: b, color: 'magenta', text: `⏳ ${name} needs you${b.waitingFor ? ': ' + b.waitingFor : ''}` }
   }
-  if (settings.cooling && b.state === 'idle' && b.lastActivity && (b.ctx || 0) >= settings.bigTokens) {
+  if (settings.cooling && !inThatChat && b.state === 'idle' && b.lastActivity && (b.ctx || 0) >= settings.bigTokens) {
     const left = (b.ttlMin || 60) * MIN - (now - b.lastActivity)
     if (left > 0 && left <= 5 * MIN) {
       return { key: `cool:${b.id}:${b.lastActivity}`, beat: b, color: 'yellow', text: `◐ ${name}: ${tokens(b.ctx)} cache goes cold in ${minutes(left)}` }
     }
   }
-  if (settings.finished && b.state === 'idle' && b.lastTurnEnd && now - b.lastTurnEnd < FINISHED_FOR_MS) {
+  // stays until you dismiss or open it; a turn you watched finish makes none
+  if (settings.finished && b.state === 'idle' && b.lastTurnEnd && b.lastTurnEnd > (b.watchedTurnEnd || 0)) {
     return { key: `done:${b.id}:${b.lastTurnEnd}`, beat: b, color: 'green', text: `✓ ${name} finished ${ago(now - b.lastTurnEnd)}, your turn` }
   }
   return null
@@ -293,6 +313,8 @@ export const register: Register = (on) => {
       // usage unavailable: keep the last figure
     }
     await readTitle($)
+    await readOthers($).catch(() => {})
+    if (amFocused()) S.watchedTurnEnd = S.lastTurnEnd
     await heartbeat($).catch(() => {})
     return r
   })
