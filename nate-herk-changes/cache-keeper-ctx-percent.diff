@@ -1,0 +1,5 @@
+--- a/cache-keeper/hooks/register.mjs
++++ b/cache-keeper/hooks/register.mjs
+@@ -723 +723 @@
+-    parts.push(Text({ dimColor: true, children: [` │ ctx ${tokens(S.ctx)}`] }))
++    parts.push(Text({ dimColor: true, children: [` │ ctx ${S.window ? Math.round((100 * S.ctx) / S.window) + '%' : tokens(S.ctx)}`] }))
