@@ -183,6 +183,102 @@ Settings are saved and apply to every chat.
 
 ---
 
+## Works well with: Nate Herk's cache-keeper
+
+**cache-keeper is not in this repo.** It is one of Nate Herk's Claude Code mods (he shares them as a zip). This section explains it because it pairs with my-notifications-mod: cache-keeper watches the cost of **the chat you're in**, and my-notifications-mod watches **your other chats**.
+
+### What the "prompt cache" is, in plain words
+
+1. Every time you send a message, Claude re-reads **the whole chat**, not just your new message.
+2. To make that cheap, the chat is kept in a **prompt cache** for a while (here: **60 minutes** after the last message).
+3. **Cache warm:** re-reading comes from the cache, at about 1/20 of the normal price.
+4. **Cache cold:** after 60 minutes of silence the cache expires. The next message has to **rebuild** it, at about **2×** the normal price.
+5. Going cold does **not** add tokens. The same tokens are sent. Only the **price per token** changes.
+
+**Example** (a 400k-token chat on Opus 5.5, Claude API prices):
+
+| What happens | Price per million tokens | Cost to re-read 400k |
+|---|---|---|
+| Cache warm (read) | $0.20 | ≈ $0.08 |
+| Cache cold (rebuild into a 1-hour cache) | $8.00 | ≈ $3.20 |
+
+So one cold message costs about 40× a warm one. Bigger chats pay a bigger penalty: a 50k chat rebuilds for about $0.40.
+
+On a subscription you aren't billed these dollars directly, but big rebuilds still use up your plan limits faster.
+
+### The line above your prompt
+
+```
+● cache warm 60m | ctx 39% | rewrite ≈ $3.15 | 5h 15% · week 93% | session $24      [H] handoff
+```
+
+| Part | Meaning |
+|---|---|
+| `● cache warm 60m` | Minutes until the cache expires. **◐ yellow** in the last 5 minutes, **○ red** once cold |
+| `ctx 39%` | How full the context window is |
+| `rewrite ≈ $3.15` | What your next message would cost if the cache went cold |
+| `5h 15% · week 93%` | Your plan limits used. Yellow above 80%, red above 95% |
+| `session $24` | What this chat has cost so far, at API prices |
+| `handoff` | Summarize this chat and continue in a fresh, small one |
+
+After `/reload-plugins` the line hides until your next message. That's normal.
+
+### How to use it, step by step
+
+1. **Before you step away**, glance at the line. Is `ctx` big? Will you be gone close to an hour?
+2. **Back within the hour?** Do nothing. Any message restarts the 60-minute timer.
+3. **Away longer, and you want this chat?** Type `/keepwarm 3` (hours, 1 to 24). About 8 minutes before the cache would expire, cache-keeper sends a tiny ping that keeps it warm. The line shows `◆ kept warm · 2 pings $0.16 · until 6:30 PM`. It stops at that time, or with `/keepwarm off`.
+4. **Chat getting huge?** Click **handoff** (or press **H**). It writes a summary, then offers **Clear and continue**: a fresh chat that starts from the summary only. A 10k chat is far cheaper per message than a 400k one.
+5. **Sending to a chat that already went cold?** For chats over 150k, cache-keeper **asks first**: send anyway (pay the rebuild once) or cancel. This is the **cold-send guard**.
+6. **Running several chats?** Type `/board` for one pane with every chat: state, context, cache time left, cost, and a **keep warm** button per chat.
+
+**Example:** you're at 380k and leaving for a 2-hour meeting.
+- `/keepwarm 3`: a few pings cost cents and you come back warm.
+- Or **handoff**, then **Clear and continue**: you come back to a small, cheap chat.
+- Doing nothing: your first message after the meeting costs about $3 extra.
+
+### What happens when a chat you're NOT in is about to go cold
+
+1. **About 5 minutes before** (big chats only, over 150k):
+   - cache-keeper pops a toast in your other chats: *"…: 180k-token cache goes cold in 5m … open /board to keep it warm."*
+   - my-notifications-mod shows a card: `◐ "<chat>": 180k cache goes cold in 4m   open   dismiss`
+2. **Choose:**
+   - **Keep it:** click **open** and send a short message, or press **keep warm** on its row in `/board`.
+   - **Let it go:** do nothing. Fine if you're done with that chat.
+3. **At 0 minutes:** the cache expires. **No charge** yet.
+4. **Later:** you pay the rebuild **once**, only when that chat runs again. If you never go back, you never pay.
+
+**Catch:** a chat can wake up by itself (a background command finishing, a side session reporting back, a scheduled check). That wake-up is a request too and pays the rebuild. The cold-send guard only stops messages you type.
+
+### Why keep-warm isn't automatic
+
+Each ping is a cache read, about $0.08 per hour at 400k:
+
+| 400k chat | Keep warm 24 h | Let it go cold, come back once |
+|---|---|---|
+| You do come back | ≈ $1.90 | ≈ $3.20 |
+| You never come back | ≈ $1.90 wasted | $0 |
+
+Keeping every chat warm forever would spend money on chats you've left behind, so keep-warm is something you turn on, for a set number of hours.
+
+### Settings (`/cache`)
+
+| Command | What it does | Default |
+|---|---|---|
+| `/cache` | Status: context, cache window, warm time left, plan limits, cost | |
+| `/cache ttl auto` / `60` / `5` | The cache window. `auto` learns it from what actually happens | `auto` (starts at 60) |
+| `/cache guard on` / `off` | The ask-before-cold-send question | on |
+| `/cache big 150k` | How big a chat must be for the guard and alerts | `150k` |
+| `/cache alerts on` / `off` | The "goes cold in 5m" toasts | on |
+| `/keepwarm 3` / `/keepwarm off` | Keep this chat warm for N hours (max 24), or stop | |
+| `/board` | All chats in one pane | |
+
+**Tip:** leave `/cache ttl` on `auto`. Setting `5` when your chats really use a 60-minute cache makes every chat say "cools in 5m" for no reason.
+
+**Local change:** in this setup, one line of cache-keeper is changed so `ctx` shows a **percentage** instead of a token count. Nate's release shows a token count, like `ctx 393k`.
+
+---
+
 ## Developing these mods
 
 1. The code lives in one folder per mod: `<mod>/hooks/register.tsx` (the main file) and `<mod>/.claude-plugin/plugin.json` (name and version).
