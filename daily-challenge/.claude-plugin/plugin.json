@@ -1,0 +1,9 @@
+{
+  "name": "daily-challenge",
+  "version": "0.1.6",
+  "description": "/challenge: one small Claude Code exercise a day, 365 in all, with your streak and progress",
+  "author": {
+    "name": "Shafaaf"
+  },
+  "types": "./types/index.d.ts"
+}

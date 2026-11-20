@@ -5,6 +5,7 @@
   "plugins": [
     { "name": "my-tools", "source": "./my-tools", "description": "A pop-out menu (Shafaaf's Tools) that holds all your mods" },
     { "name": "prompt-upgrade", "source": "./prompt-upgrade", "description": "/prompt-upgrade <rough prompt>: diagnose a rough prompt and rewrite it into a strong one" },
-    { "name": "my-notifications-mod", "source": "./my-notifications-mod", "description": "A card above the prompt when another Claude chat needs you, with open and dismiss" }
+    { "name": "my-notifications-mod", "source": "./my-notifications-mod", "description": "A card above the prompt when another Claude chat needs you, with open and dismiss" },
+    { "name": "daily-challenge", "source": "./daily-challenge", "description": "/challenge: one small Claude Code exercise a day, 365 in all, with your streak and progress" }
   ]
 }

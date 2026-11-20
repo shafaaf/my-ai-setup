@@ -8,6 +8,7 @@ const isOpen = atom({ plugin: 'my-tools', key: 'isOpen' } as const, false)
 // One row per mod. To add a mod: add a row here, then a case in runMod below.
 const MODS = [
   { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts', button: 'Upgrade my draft' },
+  { key: 'daily-challenge', name: 'Daily Challenge', blurb: 'one a day', button: "Open today's challenge" },
 ]
 
 export const register: Register = on => {
@@ -72,6 +73,10 @@ export const register: Register = on => {
         }
         await update($, isOpen, () => false)
         await $.command.run({ command: 'prompt-upgrade', args: draft })
+      }
+      if (key === 'daily-challenge') {
+        await update($, isOpen, () => false)
+        await $.command.run({ command: 'challenge', args: '' })
       }
     }
 

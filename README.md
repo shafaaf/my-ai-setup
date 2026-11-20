@@ -9,6 +9,7 @@ This repository is also a **plugin marketplace** named `my-mods`. That means Cla
 | [my-tools](#1-my-tools-shafaafs-tools-menu) | A pop-out **Shafaaf's Tools** menu that holds the other mods |
 | [prompt-upgrade](#2-prompt-upgrade) | Turns a rough prompt into a strong one, in a side pane |
 | [my-notifications-mod](#3-my-notifications-mod) | A card above the prompt when **another** Claude chat needs you |
+| [daily-challenge](#4-daily-challenge) | One small Claude Code exercise a day, with your streak, in a side pane |
 
 ---
 
@@ -25,6 +26,7 @@ You need Claude Code. The mods work best in the **Claude desktop app**; most als
    /plugin install my-tools --marketplace shafaaf/my-mods
    /plugin install prompt-upgrade --marketplace shafaaf/my-mods
    /plugin install my-notifications-mod --marketplace shafaaf/my-mods
+   /plugin install daily-challenge --marketplace shafaaf/my-mods
    ```
 
 3. The first time, Claude Code asks whether to add the `shafaaf/my-mods` marketplace. Answer `y`.
@@ -64,7 +66,8 @@ Then `/reload-plugins` in open chats.
    ```
    ◆ S H A F A A F ' S   T O O L S                 Shafaaf's Tools ▼
    ── M O D S
-   ● Prompt Upgrade   better prompts                [Upgrade my draft]
+   ● Prompt Upgrade    better prompts               [Upgrade my draft]
+   ● Daily Challenge   one a day              [Open today's challenge]
    ```
 
 3. Click a row's button to run that mod.
@@ -186,6 +189,100 @@ Settings are saved and apply to every chat.
 
 ---
 
+## 4. daily-challenge
+
+**What it is:** a side pane that gives you **one small Claude Code exercise a day**, about 5 minutes each, no coding needed. There are **365** challenges and none ever repeat. It tracks how many you've done and your **streak**.
+
+The challenges rotate through seven themes, so any 7 days in a row cover all of them:
+
+| Theme | Example challenge |
+|---|---|
+| Prompting | **Say the goal first**: open your request with one sentence saying what the result is for |
+| Files | **Summarise a PDF**: ask for a five-bullet summary with page numbers |
+| Commands | **See your context**: type `/context` and note the biggest part |
+| Memory | **Add one preference**: save one line about how you like answers |
+| Agents | **Run two at once**: ask Claude to look into two questions in parallel |
+| Build | **A countdown page**: have Claude make a web page counting down to a date |
+| Habits | **Read the diff**: after an edit, type `/diff` and read it yourself |
+
+**The pane:**
+
+```
+DAILY CHALLENGE                                          Thursday, Nov 19
+━━━━━━━━━━━━━━━──────────────────────────────────────────────────────────
+╭─────────────────────╮ ╭─────────────────────╮ ╭─────────────────────╮
+│ DAY STREAK          │ │ COMPLETED           │ │ BEST STREAK         │
+│ ╺━┓                 │ │ ╺━┓                 │ │ ╺━┓                 │
+│ ┏━┛                 │ │ ┏━┛                 │ │ ┏━┛                 │
+│ ┗━╸                 │ │ ┗━╸                 │ │ ┗━╸                 │
+│ days in a row       │ │ of 365              │ │ days                │
+╰─────────────────────╯ ╰─────────────────────╯ ╰─────────────────────╯
+
+TODAY'S CHALLENGE ──────────────────────────────────── challenge 3 of 365
+╭───────────────────────────────────────────────────────────────────────╮
+│ ● COMMANDS                                                            │
+│ Open the help                                                         │
+│ Type /help and read the list. Pick one command you have never used    │
+│ and ask Claude what it does.                                          │
+╰───────────────────────────────────────────────────────────────────────╯
+ ✓ Mark complete    Coach me through it    ↻ Give me another
+
+LAST 14 DAYS ────────────────────────────────────────────────────────────
+□   □   □   □   □   □   □   □   □   □   □   ■   ■   □
+F   S   S   M   T   W   T   F   S   S   M   T   W   T
+
+YOUR YEAR ────────────────────────────────────────────────────────── 0%
+─────────────────────────────────────────────────────────────────────────
+2 done  ·  363 to go  ·  none repeat
+```
+
+**How to use it:**
+
+1. Open the pane, any of these ways:
+   - Open **Shafaaf's Tools** and click **Open today's challenge**,
+   - click **Daily challenge** at the right of the line under the prompt (terminal), or
+   - type `/challenge`.
+2. Read today's challenge in the gold card.
+3. Pick one:
+   - **Do it yourself**, in this chat or any other.
+   - **Coach me through it**: closes the pane and puts a ready request in your message box. Press Enter and Claude walks you through it **one step at a time**, waiting for you after each step.
+   - **↻ Give me another**: swaps it for a random one you've never done. The swap holds for the rest of the day.
+4. When you're done, click **✓ Mark complete** (or type `/challenge done`). The card turns green, the streak goes up, and it says *A new one is waiting tomorrow.* Clicked by mistake? Click **Undo**.
+5. Come back tomorrow for the next one.
+
+**Example:** today's challenge is *"Open the help"*. You click **Coach me through it**, press Enter, and Claude says *"Step 1 of 3: type /help ..."*. You do each step, then click **✓ Mark complete**. Day streak shows 1.
+
+**The rules (what happens when):**
+
+1. Today's challenge is the **next one in order that you've never completed**. It isn't tied to the date.
+2. **Miss a day?** The same challenge waits for you. Only the streak resets.
+3. A completed challenge is **never offered again**, by the daily pick or by **Give me another**.
+4. **One completion per day.**
+5. **Day streak** = days in a row with a completion, ending today. Until you've done today's, it still counts through yesterday, so you don't lose it in the morning.
+6. **Best streak** = your longest run ever.
+7. Days follow your **local calendar** (midnight where you are).
+8. After all 365, the pane shows **ALL 365 COMPLETE** instead of a challenge.
+
+**Commands:**
+
+| Command | What it does |
+|---|---|
+| `/challenge` | Opens the pane |
+| `/challenge done` | Marks today's complete and replies with your streak and total |
+| `/challenge another` | Swaps today's for a random one you've never done |
+
+**Options:** none.
+
+**Good to know:**
+
+- Progress is saved in the mod's own store, so it **survives restarts** and is shared by every chat on this computer.
+- Some challenges name a slash command or a key. Each one was checked on Claude Code 2.1.317. If one isn't on your version, ask Claude how to do it.
+- The **Daily challenge** button under the prompt shows in the terminal. In the desktop app, use the Shafaaf's Tools row or `/challenge`.
+
+**How it works (for developers):** the challenges are in `daily-challenge/hooks/challenges.ts`, the rules (pick, swap, undo, streaks) in `hooks/logic.ts`, and the pane in `hooks/register.tsx`. Run the tests with `claude plugin test daily-challenge`. They check 365 unique challenges, all 7 themes in any week, never repeating a completed one, streaks, the finished state, and every button.
+
+---
+
 ## Works well with: Nate Herk's cache-keeper
 
 **cache-keeper is not in this repo.** It is one of Nate Herk's Claude Code mods (he shares them as a zip). This section explains it because it pairs with my-notifications-mod: cache-keeper watches the cost of **the chat you're in**, and my-notifications-mod watches **your other chats**.
@@ -286,7 +383,7 @@ Keeping every chat warm forever would spend money on chats you've left behind, s
 
 1. The code lives in one folder per mod: `<mod>/hooks/register.tsx` (the main file) and `<mod>/.claude-plugin/plugin.json` (name and version).
 2. After a change, **bump `version`** in `plugin.json`. Claude Code only reinstalls when the version changes.
-3. Check it: `claude plugin validate <mod folder>`.
+3. Check it: `claude plugin validate <mod folder>`, then run its tests with `claude plugin test <mod folder>`.
 4. Install it from your local copy:
 
    ```
