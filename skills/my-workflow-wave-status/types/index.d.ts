@@ -10,6 +10,9 @@ export type WaveRepo = {
   red?: number
   orange?: number
   yellow?: number
+  /** 2-3 short plain sentences: code done? tested? reviewed? PR stuck, merged, or waiting for release? */
+  summary?: string
+  /** Older field; the pane no longer shows it. */
   notes?: string
 }
 

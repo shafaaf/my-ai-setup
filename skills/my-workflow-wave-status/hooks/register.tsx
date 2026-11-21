@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { PrLive, WaveStatus } from '../types'
+import type { PrLive, WaveRepo, WaveStatus } from '../types'
 
 const PANE = 'wave-status'
 const ROOT = '/Users/shafaafhossain/Desktop/bot-food-work/worktrees'
@@ -125,6 +125,43 @@ function findingsText(r: { red?: number; orange?: number; yellow?: number }) {
 
 const cell = (text: string) => text.replace(/\|/g, '\\|').replace(/\n/g, ' ')
 
+const JIRA = 'https://botfood.atlassian.net/browse/'
+
+/** The Jira keys in the wave's ticket line, in order, without repeats. */
+function ticketKeys(line: string) {
+  return [...new Set(line.match(/[A-Z][A-Z0-9]+-\d+/g) ?? [])]
+}
+
+/**
+ * The plain-words summary for one row: the coordinator's own `summary` when it
+ * wrote one, else a short one built from the row's fields and live PR state.
+ */
+function summaryText(r: WaveRepo, pr: PrLive | undefined) {
+  if (r.summary?.trim()) return r.summary.trim()
+  const stage = r.stage.toLowerCase()
+  const merged = pr?.state === 'MERGED' || /\bmerged\b/.test(stage)
+  const parts: string[] = []
+  if (merged) parts.push('Code done and merged.')
+  else if (r.pr) parts.push(pr?.isDraft ? 'Code written; PR is a draft.' : 'Code written; PR open.')
+  else parts.push('No PR.')
+  if (pr && pr.state === 'OPEN') {
+    if (pr.fail > 0) parts.push(`Tests: ${pr.fail} CI check${pr.fail === 1 ? '' : 's'} failing.`)
+    else if (pr.pending > 0) parts.push('Tests: CI still running.')
+    else if (pr.pass > 0) parts.push('Tests: CI all green.')
+  }
+  parts.push(r.reviewRound ? `Reviewed (${r.reviewRound} round${r.reviewRound === 1 ? '' : 's'}).` : 'Not reviewed yet.')
+  if (/paus/.test(stage)) parts.push('Paused for now.')
+  else if (/on dev|active on dev|deployed/.test(stage)) parts.push('Live on DEV.')
+  else if (merged && /release|wait/.test(stage)) parts.push('Waiting for a release.')
+  return parts.join(' ')
+}
+
+/** Opens a link in Chrome (the default browser if Chrome is missing). */
+async function openInChrome($: Ctx, url: string) {
+  const r = await $.process.run(['open', '-a', 'Google Chrome', url], { timeoutMs: 10000 })
+  if (r.exitCode !== 0) await $.process.run(['open', url], { timeoutMs: 10000 })
+}
+
 // The folder's SKILL.md already gives Claude the /my-workflow-wave-status
 // command, so the pane opens when that skill runs rather than registering a
 // second command of the same name.
@@ -154,7 +191,7 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Markdown, Text } = $.ui.resolve(e)
+    const { Box, Button, Markdown, Text } = $.ui.resolve(e)
     const wave = await read($, status)
     const prs = await read($, live)
     const problem = await read($, error)
@@ -173,13 +210,14 @@ export const register: Register = on => {
       const key = r.prNumber && r.repoSlug ? `${r.repoSlug}#${r.prNumber}` : ''
       const pr = r.pr ? `[#${r.prNumber ?? 'PR'}](${r.pr})` : '—'
       const round = r.reviewRound ? `round ${r.reviewRound}` : 'not yet'
-      return `| ${cell(r.name)} | ${cell(r.stage)} | ${pr} | ${ciText(prs[key])} | ${round} | ${findingsText(r)} | ${cell(r.notes ?? '')} |`
+      return `| ${cell(r.name)} | ${cell(r.stage)} | ${pr} | ${ciText(prs[key])} | ${round} | ${findingsText(r)} | ${cell(summaryText(r, prs[key]))} |`
     })
     const flags = (wave.flags ?? []).filter(Boolean)
+    const keys = ticketKeys(wave.ticket)
     const md = [
-      `**${wave.ticket}**: ${cell(wave.stage)} · updated ${ago(wave.updatedAt, now)}`,
+      `**${keys.length ? 'Wave' : cell(wave.ticket)}**: ${cell(wave.stage)} · updated ${ago(wave.updatedAt, now)}`,
       '',
-      '| Session | Stage | PR | PR state · CI | Review | Findings | Notes |',
+      '| Session | Stage | PR | PR state · CI | Review | Findings | Summary |',
       '|---|---|---|---|---|---|---|',
       ...rows,
       '',
@@ -189,6 +227,16 @@ export const register: Register = on => {
 
     return (
       <Box flexDirection="column">
+        {keys.length ? (
+          <Box flexDirection="column" marginBottom={1}>
+            <Text bold>Tickets</Text>
+            {keys.map(k => (
+              <Box key={`ticket-${k}`} flexDirection="row">
+                <Button key={`open-${k}`} plain label={`${k} ↗`} onPress={() => void openInChrome($, `${JIRA}${k}`).catch(() => {})} />
+              </Box>
+            ))}
+          </Box>
+        ) : null}
         <Markdown text={md} />
         {problem ? <Text color="red">{problem}</Text> : null}
       </Box>

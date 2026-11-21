@@ -21,10 +21,13 @@ Keep `~/Desktop/bot-food-work/worktrees/<task>/WAVE-STATUS.json` current from st
   "ticket": "BOTFOOD-1234", "stage": "4. Review round 1", "updatedAt": "<ISO time>",
   "repos": [ { "name": "<child name>", "repo": "web", "stage": "PR open, fixing round-1 findings",
                "pr": "<url>", "prNumber": 123, "repoSlug": "botfoodai/web",
-               "reviewRound": 1, "red": 0, "orange": 0, "yellow": 2, "notes": "<one line>" } ],
+               "reviewRound": 1, "red": 0, "orange": 0, "yellow": 2,
+               "summary": "<2-3 short plain sentences>" } ],
   "flags": ["<red flag, e.g. CI failing for a non-flake reason, Docker read-only, a child blocked>"],
   "next": "<what happens next>" }
 ```
+
+`summary` is what the user reads first: 2-3 short sentences in easy words saying where that piece stands: is the code done, has it been tested, has the independent review run, and is the PR stuck, merged or waiting for a release. No paths, worktrees or SHAs. Example: "Code done and tested. Review round 3 passed. PR waits on one last test before merge." Put several tickets in `ticket` as comma-separated keys; the pane shows each as its own link.
 
 ## 0. Tickets in scope
 Work only with the ticket(s) this wave is for: the BOTFOOD keys in the arguments, the plan or the conversation. Never scan, change or report other tickets on the board; the user may have tickets there they aren't working on.

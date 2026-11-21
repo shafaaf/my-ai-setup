@@ -4,6 +4,8 @@ A pane beside the chat that shows the current `/my-workflow-wave` at a glance, s
 
 It reads this session's own `~/Desktop/bot-food-work/worktrees/<task>/WAVE-STATUS.json` (the one listing this session in `sessionIds`, or the task folder the session works in; never another session's wave) (the wave coordinator rewrites it whenever something changes) every 20 seconds. Every 2 minutes it also asks `gh` for each PR's state and checks.
 
+At the top it lists each ticket on its own row; click one to open it in Chrome.
+
 The pane shows one row per child session, with these columns:
 - session name
 - stage
@@ -11,7 +13,7 @@ The pane shows one row per child session, with these columns:
 - PR state (📝 draft / 👀 ready / merged) and live CI (✅ passed / ⏳ running / 🔴 failed)
 - review round
 - 🔴/🟠/🟡 findings
-- notes
+- summary: 2-3 short, plain sentences on where it stands (code done? tested? reviewed? PR stuck, merged, or waiting for a release?). The coordinator writes it; without one the pane builds a short one from the other columns.
 
 Under the table it lists any red flags and what happens next.
 
