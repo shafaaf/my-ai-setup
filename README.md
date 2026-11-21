@@ -94,7 +94,10 @@ Then `/reload-plugins` in open chats.
    ── M O D S
    ● Prompt Upgrade    better prompts               [Upgrade my draft]
    ● Daily Challenge   one a day              [Open today's challenge]
+   ● Helper Desk       subagents at work                [Show helpers]
    ```
+
+   **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`). That mod isn't in this repo; install it from the `benai-mods` marketplace first, or the button does nothing.
 
 3. Click a row's button to run that mod.
 4. Click **Shafaaf's Tools ▼** (or `/tools` again) to close it.

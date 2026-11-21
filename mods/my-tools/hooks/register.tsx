@@ -9,6 +9,7 @@ const isOpen = atom({ plugin: 'my-tools', key: 'isOpen' } as const, false)
 const MODS = [
   { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts', button: 'Upgrade my draft' },
   { key: 'daily-challenge', name: 'Daily Challenge', blurb: 'one a day', button: "Open today's challenge" },
+  { key: 'helper-desk', name: 'Helper Desk', blurb: 'subagents at work', button: 'Show helpers' },
 ]
 
 export const register: Register = on => {
@@ -77,6 +78,11 @@ export const register: Register = on => {
       if (key === 'daily-challenge') {
         await update($, isOpen, () => false)
         await $.command.run({ command: 'challenge', args: '' })
+      }
+      // Ben AI's helper-desk mod: /helpers opens its side pane of subagent cards.
+      if (key === 'helper-desk') {
+        await update($, isOpen, () => false)
+        await $.command.run({ command: 'helpers', args: '' })
       }
     }
 

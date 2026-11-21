@@ -55,3 +55,23 @@ test('the Daily Challenge row closes the menu and runs /challenge', async ($, on
   expect(await band.find({ type: 'Text', text: /Daily Challenge/ })).toBeUndefined()
   await band.unmount()
 })
+
+test('the Helper Desk row closes the menu and runs /helpers', async ($, on) => {
+  const ran: { command: string; args: string }[] = []
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>engine</Text>
+  })
+  // Stands for the helper-desk mod's own command.
+  on('command.run', (_, e) => {
+    ran.push({ command: e.command, args: e.args })
+    return { text: 'Helper Desk opened.' }
+  })
+  const band = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await band.press({ key: 'my-tools-pill' })
+  expect(await band.find({ type: 'Text', text: /Helper Desk/ })).toBeDefined()
+  await band.press({ key: 'mod-helper-desk' })
+  expect(ran).toEqual([{ command: 'helpers', args: '' }])
+  expect(await band.find({ type: 'Text', text: /Helper Desk/ })).toBeUndefined()
+  await band.unmount()
+})
