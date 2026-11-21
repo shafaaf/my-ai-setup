@@ -1,5 +1,7 @@
 # Changes to Nate Herk's mods
 
+> cache-keeper and collision-guard come from Nate Herk's video [Claude Code Mods Are Game Changers. Set Up These 5 NOW.](https://www.youtube.com/watch?v=9hetShMMp2s).
+
 Nate Herk's Claude Code mods (cache-keeper, collision-guard, goal-meter, recording-mode) are **not** in this repo. He shares them as a zip. On my Mac they live in `~/.claude/nateherk-mods/`.
 
 I run them **exactly as Nate wrote them**, with **two** small changes, listed below. This folder keeps those changes so it can be put back after installing a new zip from Nate, which replaces his files.

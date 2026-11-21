@@ -19,7 +19,17 @@ This repository (`my-ai-setup`, formerly `my-mods`) is also a **plugin marketpla
 | [prompt-upgrade](#2-prompt-upgrade) | Turns a rough prompt into a strong one, in a side pane |
 | [my-notifications-mod](#3-my-notifications-mod) | A card above the prompt when **another** Claude chat needs you |
 | [daily-challenge](#4-daily-challenge) | One small Claude Code exercise a day, with your streak, in a side pane |
-| [nate-herk-changes](mods/nate-herk-changes/CHANGES.md) | Not a mod: the one-line change made to Nate Herk's cache-keeper mod |
+| [nate-herk-changes](mods/nate-herk-changes/CHANGES.md) | Not a mod: the small changes made to Nate Herk's cache-keeper mod |
+
+## Where the mods come from
+
+I found these mods in three videos. Mods by other people are **not** in this repo: install them from their own marketplace.
+
+| Video | Mods | Commands | In this repo? |
+|---|---|---|---|
+| [Nate Herk: Claude Code Mods Are Game Changers. Set Up These 5 NOW.](https://www.youtube.com/watch?v=9hetShMMp2s) | cache-keeper, collision-guard | `/cache`, `/board`, `/guard` (also `/collision-guard`) | No: Nate's mods, from the `nateherk-mods` marketplace. My small cache-keeper changes are in [nate-herk-changes](mods/nate-herk-changes/CHANGES.md). |
+| [Tristen O'Brien: 5 MORE Claude Code MODS You Need](https://www.youtube.com/watch?v=aD-h7Bcn5OY) | Prompt master, Daily challenge | `/prompt-upgrade`, `/challenge` | Yes: my own versions, [prompt-upgrade](#2-prompt-upgrade) and [daily-challenge](#4-daily-challenge), built from his ideas. **More of his mods:** [tristenobrien.ai](https://tristenobrien.ai/) |
+| [Ben AI: 9 Insane Claude Mods I Already Can't Live Without](https://www.youtube.com/watch?v=bTqizdva04g) | brain-dump, helper-desk, mods | `/shape`, `/helpers`, `/mods` (the "switchboard" pane) | No: Ben's mods, from the `benai-mods` marketplace. |
 
 ## Skills
 
@@ -97,7 +107,7 @@ Then `/reload-plugins` in open chats.
    ● Daily Challenge  one a day            ● Cache Board  (All sessions)
    ```
 
-   **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`). That mod isn't in this repo; install it from the `benai-mods` marketplace first, or the button does nothing.
+   **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`), from his video [9 Insane Claude Mods](https://www.youtube.com/watch?v=bTqizdva04g). That mod isn't in this repo; install it from the `benai-mods` marketplace first, or the button does nothing.
 
 3. Click a row to run that mod.
 4. Click **Shafaaf's Tools ▼** (or `/tools` again) to close it.
@@ -115,6 +125,8 @@ Then `/reload-plugins` in open chats.
 ---
 
 ## 2. prompt-upgrade
+
+> Idea from Tristen O'Brien's video [5 MORE Claude Code MODS You Need](https://www.youtube.com/watch?v=aD-h7Bcn5OY) (he calls it Prompt master). More of his mods: [tristenobrien.ai](https://tristenobrien.ai/).
 
 **What it is:** you write a rough prompt; it opens a side pane, asks you a few quick multiple-choice questions, then writes a stronger version you can send.
 
@@ -220,6 +232,8 @@ Settings are saved and apply to every chat.
 
 ## 4. daily-challenge
 
+> Idea from Tristen O'Brien's video [5 MORE Claude Code MODS You Need](https://www.youtube.com/watch?v=aD-h7Bcn5OY) (he calls it Daily challenge). More of his mods: [tristenobrien.ai](https://tristenobrien.ai/).
+
 **What it is:** a side pane that gives you **one small Claude Code exercise a day**, about 5 minutes each, no coding needed. There are **365** challenges and none ever repeat. It tracks how many you've done and your **streak**.
 
 The challenges rotate through seven themes, so any 7 days in a row cover all of them:
@@ -314,7 +328,7 @@ YOUR YEAR ───────────────────────�
 
 ## Works well with: Nate Herk's cache-keeper
 
-**cache-keeper is not in this repo.** It is one of Nate Herk's Claude Code mods (he shares them as a zip). This section explains it because it pairs with my-notifications-mod: cache-keeper watches the cost of **the chat you're in**, and my-notifications-mod watches **your other chats**.
+**cache-keeper is not in this repo.** It is one of Nate Herk's Claude Code mods (he shares them as a zip), from his video [Claude Code Mods Are Game Changers](https://www.youtube.com/watch?v=9hetShMMp2s). This section explains it because it pairs with my-notifications-mod: cache-keeper watches the cost of **the chat you're in**, and my-notifications-mod watches **your other chats**.
 
 ### What the "prompt cache" is, in plain words
 

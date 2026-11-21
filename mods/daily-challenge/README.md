@@ -1,5 +1,7 @@
 # Daily Challenge
 
+> Idea from Tristen O'Brien's video [5 MORE Claude Code MODS You Need](https://www.youtube.com/watch?v=aD-h7Bcn5OY). More of his mods: [tristenobrien.ai](https://tristenobrien.ai/).
+
 **What it is:** a side pane that gives you **one small Claude Code exercise a day**. Each takes about 5 minutes and needs no coding. There are **365** challenges and none ever repeat. The pane tracks how many you've done and your **streak**.
 
 There are seven themes: **Prompting, Files, Commands, Memory, Agents, Build, Habits**. They're dealt in turn, so any 7 days in a row cover all of them.
