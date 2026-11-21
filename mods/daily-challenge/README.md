@@ -7,7 +7,7 @@ There are seven themes: **Prompting, Files, Commands, Memory, Agents, Build, Hab
 ## How to use it
 
 1. Open the pane, any of these ways:
-   - Open **Shafaaf's Tools** and click **Open today's challenge**.
+   - Open **Shafaaf's Tools** and click **Daily Challenge**.
    - In the terminal, click **Daily challenge** at the right of the line under the prompt.
    - Type `/challenge`.
 2. Read today's challenge in the gold card.

@@ -92,14 +92,14 @@ Then `/reload-plugins` in open chats.
    ```
    ◆ S H A F A A F ' S   T O O L S                 Shafaaf's Tools ▼
    ── M O D S
-   ● Prompt Upgrade    better prompts               [Upgrade my draft]
-   ● Daily Challenge   one a day              [Open today's challenge]
-   ● Helper Desk       subagents at work                [Show helpers]
+   ● Prompt Upgrade   better prompts
+   ● Daily Challenge  one a day
+   ● Helper Desk      subagents at work
    ```
 
    **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`). That mod isn't in this repo; install it from the `benai-mods` marketplace first, or the button does nothing.
 
-3. Click a row's button to run that mod.
+3. Click a row to run that mod.
 4. Click **Shafaaf's Tools ▼** (or `/tools` again) to close it.
 
 **Commands:**
@@ -131,7 +131,7 @@ Then `/reload-plugins` in open chats.
 
 1. Type your rough prompt in the message box (don't send it).
 2. Start it, either way:
-   - Open **Shafaaf's Tools** and click **Upgrade my draft**, or
+   - Open **Shafaaf's Tools** and click **Prompt Upgrade**, or
    - Type `/prompt-upgrade fix the login bug`.
 3. Answer the questions in the pane. Click **Skip the rest, upgrade now** if you're in a hurry.
 4. Read the result, then pick one:
@@ -268,7 +268,7 @@ YOUR YEAR ───────────────────────�
 **How to use it:**
 
 1. Open the pane, any of these ways:
-   - Open **Shafaaf's Tools** and click **Open today's challenge**,
+   - Open **Shafaaf's Tools** and click **Daily Challenge**,
    - click **Daily challenge** at the right of the line under the prompt (terminal), or
    - type `/challenge`.
 2. Read today's challenge in the gold card.

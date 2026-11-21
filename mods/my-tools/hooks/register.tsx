@@ -5,11 +5,11 @@ const TITLE = "Shafaaf's Tools"
 
 const isOpen = atom({ plugin: 'my-tools', key: 'isOpen' } as const, false)
 
-// One row per mod. To add a mod: add a row here, then a case in runMod below.
+// One row per mod; clicking the row runs it. To add a mod: add a row here, then a case in runMod below.
 const MODS = [
-  { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts', button: 'Upgrade my draft' },
-  { key: 'daily-challenge', name: 'Daily Challenge', blurb: 'one a day', button: "Open today's challenge" },
-  { key: 'helper-desk', name: 'Helper Desk', blurb: 'subagents at work', button: 'Show helpers' },
+  { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts' },
+  { key: 'daily-challenge', name: 'Daily Challenge', blurb: 'one a day' },
+  { key: 'helper-desk', name: 'Helper Desk', blurb: 'subagents at work' },
 ]
 
 export const register: Register = on => {
@@ -95,15 +95,14 @@ export const register: Register = on => {
           </Button>
         </Box>
         <Text dimColor>── M O D S</Text>
+        {/* The whole row is the button: no separate button on the right, which
+            overlapped the rows in the desktop app. */}
         {MODS.map(mod => (
-          <Box flexDirection="row" justifyContent="space-between">
-            <Text>
-              <Text color="success">● </Text>
-              <Text bold>{mod.name}</Text>
-              <Text dimColor>  {mod.blurb}</Text>
-            </Text>
-            <Button key={`mod-${mod.key}`} label={mod.button} onPress={() => runMod(mod.key)} />
-          </Box>
+          <Button key={`mod-${mod.key}`} plain onPress={() => runMod(mod.key)}>
+            <Text color="success">● </Text>
+            <Text bold>{mod.name}</Text>
+            <Text dimColor>  {mod.blurb}</Text>
+          </Button>
         ))}
       </Box>
     )
