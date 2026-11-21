@@ -1,0 +1,67 @@
+--- a/cache-keeper/hooks/register.mjs
++++ b/cache-keeper/hooks/register.mjs
+@@ -51,6 +51,8 @@
+ let now = 0
+ let home = ''
+ let lastHeartbeat = 0
++// [Shafaaf 1.0.2] The desktop app's sidebar title for this chat, shown on /board
++const T = { hostId: '', file: '', title: '', readAt: 0 }
+ let rec = { on: false, strict: false }
+ let mask = (s) => s
+ let fleet = [] // heartbeats of every session, this one included
+@@ -250,7 +252,7 @@
+   else if (S.working) state = 'working'
+   return {
+     id: S.id,
+-    label: S.label,
++    label: T.title || S.label,
+     cwd: S.cwd,
+     model: S.model,
+     state,
+@@ -303,10 +305,38 @@
+   mask = rec.on ? makeMasker({ strict: rec.strict }) : (s) => s
+ }
+ 
++// [Shafaaf 1.0.2] Read the sidebar title from the desktop app's session file
++// (renames show within 30 s). Outside the desktop app, keep Nate's label.
++async function readTitle($) {
++  if (!T.hostId || !home || now - T.readAt < 30000) return
++  T.readAt = now
++  try {
++    if (!T.file) {
++      const root = `${home}/Library/Application Support/Claude/claude-code-sessions`
++      for (const a of await $.fs.list(root)) {
++        if (a.kind !== 'dir') continue
++        for (const b of await $.fs.list(`${root}/${a.name}`)) {
++          if (b.kind !== 'dir') continue
++          const file = `${root}/${a.name}/${b.name}/${T.hostId}.json`
++          if (await $.fs.exists(file)) { T.file = file; break }
++        }
++        if (T.file) break
++      }
++    }
++    if (!T.file) return
++    const data = JSON.parse(await $.fs.read(T.file))
++    const title = data && typeof data.title === 'string' ? data.title.trim() : ''
++    T.title = title && title !== 'New session' ? title : ''
++  } catch {
++    // no desktop session file: keep Nate's folder + first-prompt label
++  }
++}
++
+ async function heartbeat($, force) {
+   if (!S.id) return
+   if (!force && now - lastHeartbeat < 5000) return
+   lastHeartbeat = now
++  await readTitle($)
+   try {
+     const agents = await $.agent.list()
+     S.agentsRunning = agents.filter((a) => a.status === 'running').length
+@@ -452,6 +482,7 @@
+     S.id = await $.session.id()
+     S.cwd = await $.session.cwd()
+     S.label = basename(S.cwd)
++    T.hostId = (await $.env.get('CLAUDE_CODE_HOST_SESSION_ID')) || '' // [Shafaaf 1.0.2]
+     S.model = await $.session.model()
+     await loadSettings($)
+     await readRecording($)

@@ -10,6 +10,7 @@ const MODS = [
   { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts' },
   { key: 'daily-challenge', name: 'Daily Challenge', blurb: 'one a day' },
   { key: 'helper-desk', name: 'Helper Desk', blurb: 'subagents at work' },
+  { key: 'cache-board', name: 'Cache Board', blurb: 'every chat, warm or cold' },
 ]
 
 export const register: Register = on => {
@@ -83,6 +84,11 @@ export const register: Register = on => {
       if (key === 'helper-desk') {
         await update($, isOpen, () => false)
         await $.command.run({ command: 'helpers', args: '' })
+      }
+      // Nate Herk's cache-keeper: /board opens its Sessions pane.
+      if (key === 'cache-board') {
+        await update($, isOpen, () => false)
+        await $.command.run({ command: 'board', args: '' })
       }
     }
 

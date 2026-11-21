@@ -95,6 +95,7 @@ Then `/reload-plugins` in open chats.
    ● Prompt Upgrade   better prompts
    ● Daily Challenge  one a day
    ● Helper Desk      subagents at work
+   ● Cache Board      every chat, warm or cold
    ```
 
    **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`). That mod isn't in this repo; install it from the `benai-mods` marketplace first, or the button does nothing.
@@ -404,7 +405,7 @@ Keeping every chat warm forever would spend money on chats you've left behind, s
 
 **Tip:** leave `/cache ttl` on `auto`. Setting `5` when your chats really use a 60-minute cache makes every chat say "cools in 5m" for no reason.
 
-**Local change:** in this setup, one line of cache-keeper is changed so `ctx` shows a **percentage** instead of a token count. Nate's release shows a token count, like `ctx 393k`. The change and how to re-apply it are in [`mods/nate-herk-changes/`](mods/nate-herk-changes/CHANGES.md).
+**Local changes:** in this setup, cache-keeper has two small edits: `ctx` shows a **percentage** instead of a token count (Nate's shows `ctx 393k`), and `/board` names each chat by its **sidebar title** instead of the folder name. Shafaaf's Tools has a **Cache Board** row that opens `/board`. The changes and how to re-apply them are in [`mods/nate-herk-changes/`](mods/nate-herk-changes/CHANGES.md).
 
 ---
 
