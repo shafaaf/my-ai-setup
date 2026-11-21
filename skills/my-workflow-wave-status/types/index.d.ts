@@ -24,8 +24,13 @@ export type WaveStatus = {
   stage: string
   updatedAt: string
   repos: WaveRepo[]
+  /** 2-3 short plain sentences: where the whole wave is at a glance. */
+  summary?: string
+  /** How much of the wave is done, 0-100. Without it the pane estimates from the rows. */
+  percent?: number
   flags?: string[]
-  next?: string
+  /** Next steps: a list, or one string with steps split by "; ". */
+  next?: string | string[]
 }
 
 /** Live GitHub state of one PR, keyed by "<repoSlug>#<prNumber>". */

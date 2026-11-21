@@ -79,6 +79,48 @@ def summary(r, live):
     return " ".join(parts)
 
 
+def row_progress(r, live):
+    stage = (r.get("stage") or "").lower()
+    state, draft, fail, pending, passed = live or ("", False, 0, 0, 0)
+    if re.search(r"on dev|active on dev|deployed", stage):
+        return 1
+    if state == "MERGED" or re.search(r"\bmerged\b", stage):
+        return 0.9
+    if not r.get("pr"):
+        return 0.2
+    if r.get("reviewRound") and not fail and not pending and passed:
+        return 0.8
+    return 0.7 if r.get("reviewRound") else 0.5
+
+
+def wave_percent(wave, lives):
+    if isinstance(wave.get("percent"), (int, float)):
+        return max(0, min(100, round(wave["percent"]))), False
+    repos = wave.get("repos", [])
+    if not repos:
+        return 0, True
+    # The rows miss work still ahead, so each open next step takes 5% off (down to 60% of it).
+    ahead = max(0.6, 1 - 0.05 * len(next_steps(wave.get("next"))))
+    return round(sum(row_progress(r, l) for r, l in zip(repos, lives)) / len(repos) * ahead * 100), True
+
+
+def wave_summary(wave, lives):
+    if (wave.get("summary") or "").strip():
+        return wave["summary"].strip()
+    repos = wave.get("repos", [])
+    done = sum(1 for r, l in zip(repos, lives) if row_progress(r, l) >= 0.9)
+    open_ = sum(1 for r, l in zip(repos, lives) if r.get("pr") and row_progress(r, l) < 0.9)
+    n = len(repos)
+    text = f"{done} of {n} piece{'' if n == 1 else 's'} merged or on DEV" + (f"; {open_} PR{'' if open_ == 1 else 's'} still open" if open_ else "") + "."
+    stage = (wave.get("stage") or "").strip().rstrip(".")
+    return text + (f" Right now: {stage}." if stage else "")
+
+
+def next_steps(nxt):
+    items = nxt if isinstance(nxt, list) else re.split(r";\s+", nxt or "")
+    return [x.strip() for x in items if x and x.strip()]
+
+
 def cell(text):
     return str(text or "").replace("|", "\\|").replace("\n", " ")
 
@@ -103,19 +145,27 @@ def main():
         for k in keys:
             print(f"- [{k}]({JIRA}{k})")
         print()
-    print(f"**{'Wave' if keys else cell(wave.get('ticket'))}**: {cell(wave.get('stage'))} · updated {ago(wave.get('updatedAt', ''))}\n")
+    else:
+        print(f"**{cell(wave.get('ticket'))}**\n")
+    repos = wave.get("repos", [])
+    lives = [pr_live(r) for r in repos]
+    pct, est = wave_percent(wave, lives)
+    filled = round(pct / 10)
+    print(f"**Wave summary** · `{'█' * filled}{'░' * (10 - filled)}` {'about ' if est else ''}{pct}% done · updated {ago(wave.get('updatedAt', ''))}\n")
+    print(wave_summary(wave, lives) + "\n")
     print("| Session | Stage | PR | PR state · CI | Review | Findings | Summary |")
     print("|---|---|---|---|---|---|---|")
-    for r in wave.get("repos", []):
+    for r, live in zip(repos, lives):
         pr = f"[#{r.get('prNumber', 'PR')}]({r['pr']})" if r.get("pr") else "—"
         rnd = f"round {r['reviewRound']}" if r.get("reviewRound") else "not yet"
         found = " ".join(x for x in [f"🔴 {r['red']}" if r.get("red") else "", f"🟠 {r['orange']}" if r.get("orange") else "", f"🟡 {r['yellow']}" if r.get("yellow") else ""] if x) or "none"
-        live = pr_live(r)
         print(f"| {cell(r.get('name'))} | {cell(r.get('stage'))} | {pr} | {pr_cell(live)} | {rnd} | {found} | {cell(summary(r, live))} |")
     flags = [f for f in wave.get("flags", []) if f]
-    print("\n" + ("**🚩 Red flags**\n" + "\n".join(f"- {f}" for f in flags) if flags else "🚩 No red flags"))
-    if wave.get("next"):
-        print(f"\n**Next:** {wave['next']}")
+    print("\n**🚩 Red flags**\n")
+    print("\n".join(f"- {f}" for f in flags) if flags else "None.")
+    steps = next_steps(wave.get("next"))
+    print("\n**➡️ Next steps**\n")
+    print("\n".join(f"{i}. {x}" for i, x in enumerate(steps, 1)) if steps else "Nothing planned yet.")
 
 
 if __name__ == "__main__":

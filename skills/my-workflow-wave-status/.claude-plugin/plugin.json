@@ -1,6 +1,6 @@
 {
   "name": "my-workflow-wave-status",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Pane showing the current /my-workflow-wave: child sessions, stage, PRs, CI, review round, findings and red flags",
   "types": "./types/index.d.ts"
 }

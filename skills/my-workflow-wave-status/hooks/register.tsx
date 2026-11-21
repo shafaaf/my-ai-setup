@@ -156,6 +156,48 @@ function summaryText(r: WaveRepo, pr: PrLive | undefined) {
   return parts.join(' ')
 }
 
+/** How far one row is, 0 to 1, from its fields and live PR state. */
+function rowProgress(r: WaveRepo, pr: PrLive | undefined) {
+  const stage = r.stage.toLowerCase()
+  const merged = pr?.state === 'MERGED' || /\bmerged\b/.test(stage)
+  if (/on dev|active on dev|deployed/.test(stage)) return 1
+  if (merged) return 0.9
+  if (!r.pr) return 0.2
+  if (r.reviewRound && pr && pr.fail === 0 && pr.pending === 0 && pr.pass > 0) return 0.8
+  return r.reviewRound ? 0.7 : 0.5
+}
+
+/** The wave's % complete: the coordinator's own number, else an estimate from the rows. */
+function wavePercent(wave: WaveStatus, prs: Record<string, PrLive>) {
+  if (typeof wave.percent === 'number') return { pct: Math.max(0, Math.min(100, Math.round(wave.percent))), estimated: false }
+  if (!wave.repos.length) return { pct: 0, estimated: true }
+  const sum = wave.repos.reduce((n, r) => n + rowProgress(r, prs[prKey(r)]), 0)
+  // The rows miss work still ahead, so each open next step takes 5% off (down to 60% of it).
+  const ahead = Math.max(0.6, 1 - 0.05 * nextSteps(wave.next).length)
+  return { pct: Math.round((sum / wave.repos.length) * ahead * 100), estimated: true }
+}
+
+/** The wave summary: the coordinator's own, else one built from the rows and stage. */
+function waveSummaryText(wave: WaveStatus, prs: Record<string, PrLive>) {
+  if (wave.summary?.trim()) return wave.summary.trim()
+  const n = wave.repos.length
+  const done = wave.repos.filter(r => rowProgress(r, prs[prKey(r)]) >= 0.9).length
+  const open = wave.repos.filter(r => r.pr && rowProgress(r, prs[prKey(r)]) < 0.9).length
+  const parts = [`${done} of ${n} piece${n === 1 ? '' : 's'} merged or on DEV${open ? `; ${open} PR${open === 1 ? '' : 's'} still open` : ''}.`]
+  if (wave.stage.trim()) parts.push(`Right now: ${wave.stage.trim().replace(/\.$/, '')}.`)
+  return parts.join(' ')
+}
+
+/** The next steps as a list: an array as written, a string split at its semicolons. */
+function nextSteps(next: WaveStatus['next']) {
+  const list = Array.isArray(next) ? next : (next ?? '').split(/;\s+/)
+  return list.map(x => x.trim()).filter(Boolean)
+}
+
+const prKey = (r: WaveRepo) => (r.prNumber && r.repoSlug ? `${r.repoSlug}#${r.prNumber}` : '')
+
+const bar = (pct: number) => '█'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10))
+
 /** Opens a link in Chrome (the default browser if Chrome is missing). */
 async function openInChrome($: Ctx, url: string) {
   const r = await $.process.run(['open', '-a', 'Google Chrome', url], { timeoutMs: 10000 })
@@ -214,15 +256,25 @@ export const register: Register = on => {
     })
     const flags = (wave.flags ?? []).filter(Boolean)
     const keys = ticketKeys(wave.ticket)
+    const { pct, estimated } = wavePercent(wave, prs)
+    const steps = nextSteps(wave.next)
     const md = [
-      `**${keys.length ? 'Wave' : cell(wave.ticket)}**: ${cell(wave.stage)} · updated ${ago(wave.updatedAt, now)}`,
+      keys.length ? '' : `**${cell(wave.ticket)}**`,
+      `**Wave summary** · \`${bar(pct)}\` ${estimated ? 'about ' : ''}${pct}% done · updated ${ago(wave.updatedAt, now)}`,
+      '',
+      waveSummaryText(wave, prs),
       '',
       '| Session | Stage | PR | PR state · CI | Review | Findings | Summary |',
       '|---|---|---|---|---|---|---|',
       ...rows,
       '',
-      flags.length ? `**🚩 Red flags**\n${flags.map(f => `- ${f}`).join('\n')}` : '🚩 No red flags',
-      wave.next ? `\n**Next:** ${wave.next}` : '',
+      '**🚩 Red flags**',
+      '',
+      flags.length ? flags.map(f => `- ${f}`).join('\n') : 'None.',
+      '',
+      '**➡️ Next steps**',
+      '',
+      steps.length ? steps.map((x, i) => `${i + 1}. ${x}`).join('\n') : 'Nothing planned yet.',
     ].join('\n')
 
     return (
