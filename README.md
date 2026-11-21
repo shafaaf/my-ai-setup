@@ -6,6 +6,7 @@ Shafaaf's own **Claude Code mods** and **skills**, in one repository.
 |---|---|
 | [`mods/`](mods/) | **Mods**: small plugins that change what Claude Code shows or does (a menu, a side pane, a card above the prompt). Installed through this repo's plugin marketplace. |
 | [`skills/`](skills/) | **Skills**: instructions Claude Code and Codex follow when you call them by name (`/name` in Claude, `$name` in Codex). See [`skills/README.md`](skills/README.md). |
+| [`settings/`](settings/) | **Settings**: my shortcuts, custom commands and Claude settings. See [`settings/README.md`](settings/README.md). |
 | [`.claude-plugin/`](.claude-plugin/) | The marketplace file that lists the mods. |
 
 This repository (`my-ai-setup`, formerly `my-mods`) is also a **plugin marketplace** named `my-mods`, so Claude Code can install any of the mods below straight from GitHub. The marketplace keeps the old name so installed mods (`<mod>@my-mods`) keep working.
