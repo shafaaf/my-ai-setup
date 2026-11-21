@@ -1,6 +1,6 @@
 diff -ru a/plugins/mods/hooks/register.test.tsx b/plugins/mods/hooks/register.test.tsx
 --- a/plugins/mods/hooks/register.test.tsx	2026-11-21 16:11:42
-+++ b/plugins/mods/hooks/register.test.tsx	2026-11-21 16:15:34
++++ b/plugins/mods/hooks/register.test.tsx	2026-11-21 16:30:02
 @@ -2,6 +2,35 @@
  
  const props = { title: 'Mods', isFocused: false, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } as never
@@ -57,6 +57,17 @@ diff -ru a/plugins/mods/hooks/register.test.tsx b/plugins/mods/hooks/register.te
      mock.env(on, {})
  
      await $.session.start({ source: 'startup', cwd: '/Users/test/vault', surface, isInteractive: true } as never)
+@@ -43,8 +66,8 @@
+     expect(await v.find({ text: 'New mods appear here by themselves.' }), 'footer line on new mods').toBeDefined()
+     expect(await v.find({ text: 'Helper Desk' }), 'Helper Desk keeps its name').toBeDefined()
+     expect(await v.find({ key: 'show-brain-dump' }), 'no Shown/Hidden on brain-dump').toBeUndefined()
+-    expect(await v.find({ text: '/cacheclock to show or hide' }), 'tip under Cache Clock').toBeDefined()
+-    expect(await v.find({ text: '/screen-share to hide private data' }), 'tip under Screen-Share').toBeDefined()
++    expect(await v.find({ text: '/cacheclock' }), 'command under Cache Clock').toBeDefined()
++    expect(await v.find({ text: '/screen-share' }), 'command under Screen-Share').toBeDefined()
+ 
+     // Cache Clock: On to Off writes the whole file with its key set to false.
+     await v.press({ key: 'toggle-cache-clock' })
 @@ -82,18 +105,12 @@
      on('command.register', async () => ({ value: undefined }) as never)
      mock.clock(on, { now: new Date(2026, 9, 15, 21, 0).getTime() })
@@ -97,7 +108,25 @@ diff -ru a/plugins/mods/hooks/register.test.tsx b/plugins/mods/hooks/register.te
      mock.env(on, {})
  
      await $.session.start({ source: 'startup', cwd: '/Users/test/vault', surface, isInteractive: true } as never)
-@@ -182,9 +193,11 @@
+@@ -147,12 +158,15 @@
+     expect(files[ask], 'request file is empty').toBe('')
+     expect(await v.find({ text: 'Helper Desk opens in this chat within 3 seconds.' }), 'note').toBeDefined()
+ 
+-    // Hidden: Open cannot be pressed.
++    // Hidden or off: no Open at all, not even a greyed-out one (local change, Shafaaf).
++    const opens = async () => (await v.findAll({ text: 'Open' })).filter(t => t.type === 'Button' || t.type === 'Text').length
++    const shownOpens = await opens()
+     await v.press({ key: 'show-chat-inventory' })
+     expect(await v.find({ key: 'open-chat-inventory' }), 'no Open while hidden').toBeUndefined()
+-    // Off: Open cannot be pressed.
++    expect(await opens(), 'no greyed-out Open while hidden').toBe(shownOpens - 1)
+     await v.press({ key: 'toggle-helper-desk' })
+     expect(await v.find({ key: 'open-helper-desk' }), 'no Open while off').toBeUndefined()
++    expect(await opens(), 'no greyed-out Open while off').toBe(shownOpens - 2)
+     await v.press({ key: 'show-chat-inventory' })
+     expect(await v.find({ key: 'open-chat-inventory' }), 'Open again on an On and Shown mod').toBeDefined()
+   })
+@@ -182,9 +196,11 @@
    '/.claude/dev-mods/sid-123/brand-new/.claude-plugin/plugin.json': JSON.stringify({ name: 'brand-new', description: 'Made in this chat' }),
    '/.claude/dev-mods/sid-123/brand-new/hooks/hooks.json': JSON.stringify({ modules: ['./register.tsx'] }),
    '/.claude/dev-mods/sid-123/brand-new/hooks/register.tsx': "'switches.json'",
@@ -110,7 +139,7 @@ diff -ru a/plugins/mods/hooks/register.test.tsx b/plugins/mods/hooks/register.te
    '/.claude/dev-mods/sid-123': ['brand-new'],
    '/.claude/plugins/cache': ['anthropic'],
    '/.claude/plugins/cache/anthropic': ['replay-theater'],
-@@ -290,18 +303,12 @@
+@@ -290,18 +306,12 @@
        ran.push(argv)
        return { value: { exitCode: 0, stdout: argv[0] === 'uname' ? s.uname : '', stderr: '' } } as never
      })
@@ -130,7 +159,7 @@ diff -ru a/plugins/mods/hooks/register.test.tsx b/plugins/mods/hooks/register.te
      mock.env(on, { ...s.env })
  
      await $.session.start({ source: 'startup', cwd: '/work', surface: 'terminal', isInteractive: true } as never)
-@@ -314,5 +321,84 @@
+@@ -314,5 +324,115 @@
      expect(JSON.parse(files[at] ?? '{}'), `switches.json at ${s.want}; written: ${Object.keys(files).join(', ')}`).toEqual({ 'cache-clock': false })
      expect(await v.find({ text: 'Cache Clock is off in every chat.' }), 'no error note').toBeDefined()
      if ('OS' in s.env) expect(ran.some(a => a[0] === 'mkdir'), 'no mkdir on Windows').toBe(false)
@@ -149,12 +178,21 @@ diff -ru a/plugins/mods/hooks/register.test.tsx b/plugins/mods/hooks/register.te
 +  '/.claude/skills/wave-status/hooks/hooks.json': JSON.stringify({ modules: ['./register.tsx'] }),
 +  '/.claude/skills/wave-status/hooks/register.tsx': "'switches.json'",
 +  '/.claude/skills/plain-skill/SKILL.md': '# A skill, not a mod',
++  '/.claude/skills/wave-status/SKILL.md': '---\nname: my-wave-status\ndescription: x\n---\n',
++  '/.claude/skills/nate-cache/.claude-plugin/plugin.json': JSON.stringify({ name: 'nate-cache', description: 'Keeps the cache warm', author: { name: 'Nate Herk' } }),
++  '/.claude/skills/nate-cache/hooks/hooks.json': JSON.stringify({ modules: ['./register.mjs'] }),
++  '/.claude/skills/nate-cache/hooks/register.mjs': "for (const name of NAMES) await $.command.register(spec)\non('command.run', { command: ['cache', 'ck-cache'] }, run)\non('command.run', { command: 'board' }, run)",
++  '/.claude/skills/daily/.claude-plugin/plugin.json': JSON.stringify({ name: 'daily', description: '/challenge <day>: one small exercise a day' }),
++  '/.claude/skills/daily/hooks/hooks.json': JSON.stringify({ modules: ['./register.tsx'] }),
++  '/.claude/skills/daily/hooks/register.tsx': "await $.command.register({ name: 'challenge' })",
 +}
 +const skillDirs: Record<string, { name: string; isLink: boolean }[]> = {
 +  '/.claude/mods': [{ name: 'helper-desk', isLink: false }],
 +  '/.claude/skills': [
 +    { name: 'wave-status', isLink: true },
 +    { name: 'no-author', isLink: true },
++    { name: 'nate-cache', isLink: true },
++    { name: 'daily', isLink: true },
 +    { name: 'plain-skill', isLink: true },
 +  ],
 +}
@@ -207,17 +245,39 @@ diff -ru a/plugins/mods/hooks/register.test.tsx b/plugins/mods/hooks/register.te
 +    expect(await v.find({ text: 'Shows the wave' }), 'with its description').toBeDefined()
 +    expect(await v.find({ text: 'Plain Skill' }), 'a plain skill is not a mod').toBeUndefined()
 +    const order = (await v.findAll({ type: 'Box' })).map(b => b.key ?? '').filter(k => k.startsWith('row-')).map(k => k.slice(4))
-+    expect(order, 'only what is installed').toEqual(['helper-desk', 'no-author', 'wave-status'])
++    expect(order, 'only what is installed').toEqual(['helper-desk', 'daily', 'nate-cache', 'no-author', 'wave-status'])
 +
 +    // Who made each mod, from plugin.json "author" (an object with a name, or a plain string).
 +    expect(await v.find({ text: /\(Ben AI\)/ }), 'author object').toBeDefined()
 +    expect(await v.find({ text: /\(Shafaaf\)/ }), 'author string').toBeDefined()
 +    expect(await v.find({ text: /No Author \(/ }), 'no author, no brackets').toBeUndefined()
++
++    // The commands you type sit alone on the last line of each row; the description above has none.
++    const texts = (await v.findAll({ type: 'Text' })).map(t => t.text ?? '')
++    expect(texts, 'known mod: only the command').toContain('/helpers')
++    expect(texts, 'from command.run hooks, aliases left out').toContain('/cache, /board')
++    expect(texts, 'a skill folder: its skill command').toContain('/my-wave-status')
++    expect(texts, 'from command.register').toContain('/challenge')
++    expect(texts, 'the command is taken off the front of the description').toContain('One small exercise a day')
++    const helpers = texts.indexOf('/helpers')
++    expect(texts[helpers - 1]?.startsWith('Task progress bar'), 'the description sits right above the command').toBe(true)
++    const buttons = ['Open', 'Shown', 'Hidden', 'On', 'Off', '● On', '● Off']
++    expect(texts.slice(helpers + 1).find(t => !buttons.includes(t))?.startsWith('Daily'), 'nothing else in the row after it').toBe(true)
++    expect(texts.indexOf('Not switchable yet. Ask Claude: add the /mods switch to this mod.'), 'the note comes before the command').toBeLessThan(texts.indexOf('/cache, /board'))
++
++    // Both On and Off are buttons: the current one is marked, the other switches to it.
++    expect(await v.find({ key: 'state-helper-desk', text: /On/ }), 'On is the current state').toBeDefined()
++    expect(await v.find({ key: 'toggle-helper-desk', text: /Off/ }), 'Off is there to press').toBeDefined()
++    await v.press({ key: 'toggle-helper-desk' })
++    expect(await v.find({ key: 'state-helper-desk', text: /Off/ }), 'now Off is current').toBeDefined()
++    expect(await v.find({ key: 'toggle-helper-desk', text: /On/ }), 'and On is there to press').toBeDefined()
++    await v.press({ key: 'state-helper-desk' })
++    expect(await v.find({ key: 'state-helper-desk', text: /Off/ }), 'pressing the current state changes nothing').toBeDefined()
    })
  }
 diff -ru a/plugins/mods/hooks/register.tsx b/plugins/mods/hooks/register.tsx
 --- a/plugins/mods/hooks/register.tsx	2026-11-21 16:11:42
-+++ b/plugins/mods/hooks/register.tsx	2026-11-21 16:15:34
++++ b/plugins/mods/hooks/register.tsx	2026-11-21 16:30:02
 @@ -7,8 +7,11 @@
  // Refresh panel, also leaves an open request for this chat.
  // The list is found on disk, not typed in: every folder under <config>/mods with a
@@ -231,19 +291,84 @@ diff -ru a/plugins/mods/hooks/register.tsx b/plugins/mods/hooks/register.tsx
  
  const PANE = 'mods'
  const TITLE = 'Mods'
-@@ -22,7 +25,7 @@
- // hide: has a Shown/Hidden switch. ask: Show also leaves an open request. tip: the slash command.
+@@ -18,20 +21,22 @@
+ const BUTTONS_COLS = 26
+ 
+ const GOOD = '#16a34a'
++const BAD = '#dc2626'
+ 
+-// hide: has a Shown/Hidden switch. ask: Show also leaves an open request. tip: the slash command.
++// hide: has a Shown/Hidden switch. ask: Show also leaves an open request. tip: the slash commands
++// you type, alone, drawn on the last line of the row.
  type Mod = { name: string; title: string; what: string; pane: boolean; hide: boolean; ask: boolean; tip: string }
  // A row in the pane: a known mod or one found on disk. switchable: its source reads switches.json.
 -type Row = Mod & { switchable: boolean; chatOnly: boolean }
 +type Row = Mod & { switchable: boolean; chatOnly: boolean; author?: string }
  
  const MODS: readonly Mod[] = [
-   { name: 'cache-clock', title: 'Cache Clock', what: 'Counts down until the cache goes cold', pane: false, hide: true, ask: false, tip: '/cacheclock to show or hide' },
-@@ -272,8 +275,12 @@
+-  { name: 'cache-clock', title: 'Cache Clock', what: 'Counts down until the cache goes cold', pane: false, hide: true, ask: false, tip: '/cacheclock to show or hide' },
+-  { name: 'handoff', title: 'Handoff (Refresh)', what: 'Moves a long chat to a fresh one', pane: false, hide: true, ask: true, tip: '/refresh to show it' },
+-  { name: 'screen-share', title: 'Screen-Share Mode', what: 'Hides emails, phones and amounts on screen', pane: false, hide: false, ask: false, tip: '/screen-share to hide private data' },
+-  { name: 'brain-dump', title: 'Brain-Dump Shaper', what: 'Turns long rambling prompts into clear briefs', pane: false, hide: false, ask: false, tip: '' },
++  { name: 'cache-clock', title: 'Cache Clock', what: 'Counts down until the cache goes cold', pane: false, hide: true, ask: false, tip: '/cacheclock' },
++  { name: 'handoff', title: 'Handoff (Refresh)', what: 'Moves a long chat to a fresh one', pane: false, hide: true, ask: true, tip: '/refresh' },
++  { name: 'screen-share', title: 'Screen-Share Mode', what: 'Hides emails, phones and amounts on screen', pane: false, hide: false, ask: false, tip: '/screen-share' },
++  { name: 'brain-dump', title: 'Brain-Dump Shaper', what: 'Turns long rambling prompts into clear briefs', pane: false, hide: false, ask: false, tip: '/shape' },
+   { name: 'reflect', title: 'Reflect', what: 'Saves your corrections as lasting rules', pane: false, hide: false, ask: false, tip: '' },
+-  { name: 'helper-desk', title: 'Helper Desk', what: 'Task progress bar above the prompt, plus a card per subagent', pane: true, hide: true, ask: true, tip: '/helpers to open' },
+-  { name: 'chat-inventory', title: 'Chat Inventory', what: 'Connectors, files and skills this chat used', pane: true, hide: true, ask: true, tip: '/inventory to open' },
++  { name: 'helper-desk', title: 'Helper Desk', what: 'Task progress bar above the prompt, plus a card per subagent', pane: true, hide: true, ask: true, tip: '/helpers' },
++  { name: 'chat-inventory', title: 'Chat Inventory', what: 'Connectors, files and skills this chat used', pane: true, hide: true, ask: true, tip: '/inventory' },
+ ]
+ 
+ // Module variables reset on a reload; the switches themselves live in the file.
+@@ -252,13 +257,36 @@
+ 
+ function commandsIn(source: string) {
+   const out: string[] = []
+-  for (const m of source.matchAll(/command\.register\(\s*\{\s*name:\s*['"`]([^'"`]+)['"`]/g)) {
+-    const name = m[1] ?? ''
++  const add = (name: string) => {
+     if (name && !out.includes(name)) out.push(name)
+   }
++  for (const m of source.matchAll(/command\.register\(\s*\{\s*name:\s*['"`]([^'"`]+)['"`]/g)) add(m[1] ?? '')
++  // A command.run hook names its command, or a list whose first is the command and the rest
++  // aliases: on('command.run', { command: ['cache', 'ck-cache'] }, ...).
++  for (const m of source.matchAll(/command\.run['"`]\s*,\s*\{\s*command:\s*(\[[^\]]*\]|['"`][^'"`]+['"`])/g)) {
++    const first = (m[1] ?? '').match(/['"`]([^'"`]+)['"`]/)
++    add(first?.[1] ?? '')
++  }
+   return out
+ }
+ 
++// A description that starts with its command ("/challenge <day>: one exercise a day"):
++// the command and the description apart, the description capitalised.
++function splitWhat(what: string): { command: string; rest: string } {
++  const m = what.match(/^\/([\w:-]+)(?:\s+<[^>]*>)*\s*:\s*(.*)$/s)
++  if (!m) return { command: '', rest: what }
++  const rest = m[2] ?? ''
++  return { command: m[1] ?? '', rest: rest.charAt(0).toUpperCase() + rest.slice(1) }
++}
++
++// A skill folder that is also a mod: its skill runs as /<name from SKILL.md>.
++async function skillCommand($: EngineInterface, dir: string) {
++  const text = await readText($, `${dir}/SKILL.md`)
++  if (!text) return ''
++  const name = text.match(/^---[\s\S]*?^name:\s*['"]?([\w:-]+)['"]?\s*$/m)
++  return name?.[1] ?? dir.split('/').pop() ?? ''
++}
++
+ // A mod is a plugin.json plus a hooks.json with "modules". Anything else is not one.
+ async function inspect($: EngineInterface, dir: string, chatOnly: boolean): Promise<Row | null> {
+   const pluginRaw = await readText($, `${dir}/.claude-plugin/plugin.json`)
+@@ -271,12 +299,18 @@
+   if (!name || name === 'mods') return null
    const source = await hooksSource($, dir)
    const known = MODS.find(m => m.name === name)
-   const commands = commandsIn(source).map(c => `/${c}`)
+-  const commands = commandsIn(source).map(c => `/${c}`)
++  const split = splitWhat(typeof plugin.description === 'string' ? plugin.description : '')
++  const skill = await skillCommand($, dir)
++  const commands = [...new Set([split.command, ...commandsIn(source), skill].filter(Boolean))].map(c => `/${c}`)
 +  // Who made it: plugin.json "author", an object with a name or a plain string.
 +  const by = plugin.author
 +  const author = typeof by === 'string' ? by : by && typeof by === 'object' ? (by as Record<string, unknown>).name : undefined
@@ -251,9 +376,14 @@ diff -ru a/plugins/mods/hooks/register.tsx b/plugins/mods/hooks/register.tsx
      name,
 +    author: typeof author === 'string' && author.trim() ? author.trim() : undefined,
      title: known?.title ?? titleCase(name),
-     what: known?.what ?? (typeof plugin.description === 'string' ? plugin.description : ''),
-     tip: known?.tip ?? commands.join(', '),
-@@ -285,7 +292,7 @@
+-    what: known?.what ?? (typeof plugin.description === 'string' ? plugin.description : ''),
+-    tip: known?.tip ?? commands.join(', '),
++    what: known?.what ?? split.rest,
++    tip: known?.tip || commands.join(', '),
+     pane: known?.pane ?? false,
+     hide: known?.hide ?? false,
+     ask: known?.ask ?? false,
+@@ -285,7 +319,7 @@
    }
  }
  
@@ -262,7 +392,7 @@ diff -ru a/plugins/mods/hooks/register.tsx b/plugins/mods/hooks/register.tsx
  async function scan($: EngineInterface): Promise<Row[]> {
    const base = claudeDirOf($)
    const found = new Map<string, Row>()
-@@ -294,6 +301,8 @@
+@@ -294,6 +328,8 @@
    for (const d of await envDirs($)) dirs.push([d, false])
    for (const d of await installedDirs($)) dirs.push([d, false])
    for (const d of await cacheDirs($)) dirs.push([d, false])
@@ -271,7 +401,7 @@ diff -ru a/plugins/mods/hooks/register.tsx b/plugins/mods/hooks/register.tsx
    if (sid) for (const d of await listDirs($, `${base}/dev-mods/${sid}`)) dirs.push([d, true])
    const seen = new Set<string>()
    for (const [dir, chatOnly] of dirs) {
-@@ -302,11 +311,14 @@
+@@ -302,11 +338,14 @@
      const row = await inspect($, dir, chatOnly)
      if (row && !found.has(row.name)) found.set(row.name, row)
    }
@@ -289,7 +419,7 @@ diff -ru a/plugins/mods/hooks/register.tsx b/plugins/mods/hooks/register.tsx
    const rest = [...found.values()].sort((a, b) => a.title.localeCompare(b.title))
    return [...rows, ...rest.filter(r => !r.chatOnly), ...rest.filter(r => r.chatOnly)]
  }
-@@ -320,7 +332,7 @@
+@@ -320,7 +359,7 @@
    return rows
  }
  
@@ -298,7 +428,7 @@ diff -ru a/plugins/mods/hooks/register.tsx b/plugins/mods/hooks/register.tsx
  
  // While the pane is open, look again every 10 seconds and redraw when the list changed.
  async function scanPoll($: EngineInterface) {
-@@ -452,6 +464,7 @@
+@@ -452,17 +491,13 @@
          <Box flexDirection="column" width={width}>
            <Text bold dimColor={off} wrap="truncate-end">
              {cut(m.title, width)}
@@ -306,3 +436,73 @@ diff -ru a/plugins/mods/hooks/register.tsx b/plugins/mods/hooks/register.tsx
            </Text>
            {m.what ? (
              <Text dimColor wrap="truncate-end">
+               {cut(m.what, width)}
+             </Text>
+           ) : null}
+-          {m.tip ? (
+-            <Text dimColor italic wrap="truncate-end">
+-              {cut(m.tip, width)}
+-            </Text>
+-          ) : null}
+           {m.chatOnly ? (
+             <Text dimColor italic wrap="truncate-end">
+               This chat only
+@@ -473,6 +508,8 @@
+               {NOT_SWITCHABLE}
+             </Text>
+           )}
++          {/* Last: just the commands you type to use it. */}
++          {m.tip ? <Text wrap="truncate-end">{cut(m.tip, width)}</Text> : null}
+         </Box>
+       )
+       if (!m.switchable) {
+@@ -486,14 +523,11 @@
+         <Box key={`row-${m.name}`} flexDirection="row" justifyContent="space-between" gap={1} marginTop={1}>
+           {about}
+           <Box flexDirection="row" gap={1}>
+-            {m.pane ? (
+-              off || hidden ? (
+-                <Text dimColor>Open</Text>
+-              ) : (
+-                <Button key={`open-${m.name}`} onPress={noop}>
+-                  Open
+-                </Button>
+-              )
++            {/* Open only while the mod is On and Shown; otherwise no Open at all. */}
++            {m.pane && !off && !hidden ? (
++              <Button key={`open-${m.name}`} onPress={noop}>
++                Open
++              </Button>
+             ) : null}
+             {m.hide ? (
+               off ? (
+@@ -504,9 +538,26 @@
+                 </Button>
+               )
+             ) : null}
+-            <Button key={`toggle-${m.name}`} onPress={noop}>
+-              {off ? <Text dimColor>Off</Text> : <Text color={GOOD}>On</Text>}
+-            </Button>
++            {/* Both states are buttons, On then Off. The current one is marked (state-),
++                the other switches to it (toggle-). */}
++            {off ? (
++              <Button key={`toggle-${m.name}`} onPress={noop}>
++                <Text dimColor>On</Text>
++              </Button>
++            ) : (
++              <Button key={`state-${m.name}`} onPress={noop}>
++                <Text bold color={GOOD}>● On</Text>
++              </Button>
++            )}
++            {off ? (
++              <Button key={`state-${m.name}`} onPress={noop}>
++                <Text bold color={BAD}>● Off</Text>
++              </Button>
++            ) : (
++              <Button key={`toggle-${m.name}`} onPress={noop}>
++                <Text dimColor>Off</Text>
++              </Button>
++            )}
+           </Box>
+         </Box>
+       )

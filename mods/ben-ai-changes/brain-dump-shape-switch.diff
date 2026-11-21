@@ -1,0 +1,116 @@
+diff -ru a/plugins/brain-dump/hooks/register.test.tsx b/plugins/brain-dump/hooks/register.test.tsx
+--- a/plugins/brain-dump/hooks/register.test.tsx	2026-11-21 16:25:21
++++ b/plugins/brain-dump/hooks/register.test.tsx	2026-11-21 16:25:21
+@@ -117,7 +117,7 @@
+ }
+ 
+ for (const surface of ['desktop', 'terminal'] as const) {
+-  test(`does nothing when switched off in /mods (${surface})`, { timeoutMs: 30000 }, async ($, on) => {
++  test(`does nothing when switched off, and /shape turns the same switch on and off (${surface})`, { timeoutMs: 30000 }, async ($, on) => {
+     let switches = ''
+     let asks = 0
+     const passed: string[] = []
+@@ -129,6 +129,11 @@
+     on('store.set', async () => ({ value: undefined }) as never)
+     on('fs.exists', async ($, e) => ({ value: isSwitches(e) && switches !== '' }) as never)
+     on('fs.read', async ($, e) => ({ value: isSwitches(e) ? switches : '' }) as never)
++    on('fs.write', async ($, e) => {
++      if (isSwitches(e)) switches = (e as { text: string }).text
++      return { value: undefined } as never
++    })
++    on('process.run', async () => ({ value: { exitCode: 0, stdout: '', stderr: '' } }) as never)
+     ;(on as unknown as LooseOn)('tool.call', { tool: 'AskUserQuestion' }, async (_$, e) => {
+       asks += 1
+       const { questions } = e
+@@ -146,8 +151,20 @@
+     await $.prompt.submit({ text: longDump, origin: { kind: 'composer' }, wait: false } as never)
+     expect(asks, 'no offer when off').toBe(0)
+     expect(passed[0], 'the dump goes through as typed').toBe(longDump)
++
++    // /shape and the /mods pane are one switch: /shape turns it back on in every chat...
+     const said = await $.command.run({ command: 'shape', args: '' } as never)
+-    expect(JSON.stringify(said), 'the command says it is off').toContain('Turn it on with /mods')
++    expect(JSON.stringify(said), '/shape turns it on').toContain('Brain dump shaping is on')
++    expect(JSON.parse(switches)['brain-dump'], 'the /mods switch is on again').toBeUndefined()
++    await $.prompt.submit({ text: longDump, origin: { kind: 'composer' }, wait: false } as never)
++    expect(asks, 'and the next dump gets the offer').toBe(1)
++
++    // ...and off again, in the same file the /mods pane reads.
++    const again = await $.command.run({ command: 'shape', args: '' } as never)
++    expect(JSON.stringify(again), '/shape turns it off').toContain('Brain dump shaping is off')
++    expect(JSON.parse(switches)['brain-dump'], 'the /mods switch shows Off').toBe(false)
++    await $.prompt.submit({ text: longDump, origin: { kind: 'composer' }, wait: false } as never)
++    expect(asks, 'no offer once off').toBe(1)
+   })
+ }
+ 
+diff -ru a/plugins/brain-dump/hooks/register.tsx b/plugins/brain-dump/hooks/register.tsx
+--- a/plugins/brain-dump/hooks/register.tsx	2026-11-21 16:25:21
++++ b/plugins/brain-dump/hooks/register.tsx	2026-11-21 16:25:21
+@@ -68,10 +68,29 @@
+ let home = ''
+ let claudeDir = ''
+ 
+-// The /mods switchboard turns this mod off in every chat with switches.json.
++// One switch for every chat: "brain-dump": false in switches.json means off. The /mods
++// switchboard and /shape both flip it (local change, Shafaaf: /shape used to keep a
++// second, private switch and could not turn the mod back on once /mods had it off).
+ const NAME = 'brain-dump'
+ let off = false
+ 
++// Read, change, write the whole file, as /mods does. Off is `false`; on deletes the key.
++async function setSwitch($: EngineInterface, turnOn: boolean) {
++  const dir = `${claudeDirOf($)}/mods`
++  const path = `${dir}/switches.json`
++  let json: Record<string, unknown> = {}
++  try {
++    if (await $.fs.exists(path)) json = JSON.parse(String(await $.fs.read(path))) as Record<string, unknown>
++  } catch {
++    json = {}
++  }
++  if (turnOn) delete json[NAME]
++  else json[NAME] = false
++  await mkdirs($, dir)
++  await $.fs.write(path, `${JSON.stringify(json, null, 2)}\n`)
++  off = !turnOn
++}
++
+ async function readSwitch($: EngineInterface) {
+   let now = false
+   try {
+@@ -143,9 +162,9 @@
+   }
+ }
+ 
+-async function isOn($: EngineInterface) {
+-  const v = await $.store.get('enabled').catch(() => undefined)
+-  return v !== false
++// On means the one switch is on (see setSwitch).
++async function isOn(_$: EngineInterface) {
++  return !off
+ }
+ 
+ const failWhy = (r: { reason: string; error?: string; status?: number | null }) =>
+@@ -256,8 +275,8 @@
+     home = (await findPaths($)).home
+     claudeDir = claudeDirOf($)
+     await $.command.register({ name: CMD, description: 'Turn brain dump shaping on or off' })
+-    await $.state.set(ENABLED, await isOn($))
+     await readSwitch($).catch(() => undefined)
++    await $.state.set(ENABLED, await isOn($))
+     $.clock.every(3000, () => {
+       void readSwitch($).catch(() => undefined)
+     })
+@@ -265,9 +284,9 @@
+   })
+ 
+   on('command.run', { command: CMD }, async $ => {
+-    if (off) return { text: 'Brain-Dump Shaper is off. Turn it on with /mods.' }
+-    const now = !(await isOn($))
+-    await $.store.set('enabled', now)
++    await readSwitch($).catch(() => undefined)
++    const now = off
++    await setSwitch($, now)
+     await $.state.set(ENABLED, now)
+     const text = now ? 'Brain dump shaping is on.' : 'Brain dump shaping is off.'
+     $.ui.toast(text)

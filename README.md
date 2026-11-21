@@ -20,7 +20,7 @@ This repository (`my-ai-setup`, formerly `my-mods`) is also a **plugin marketpla
 | [my-notifications-mod](#3-my-notifications-mod) | A card above the prompt when **another** Claude chat needs you |
 | [daily-challenge](#4-daily-challenge) | One small Claude Code exercise a day, with your streak, in a side pane |
 | [nate-herk-changes](mods/nate-herk-changes/CHANGES.md) | Not a mod: the small changes made to Nate Herk's cache-keeper mod |
-| [ben-ai-changes](mods/ben-ai-changes/CHANGES.md) | Not a mod: the change made to Ben AI's `/mods` pane (only installed mods, mods in the skills folder, and who made each mod) |
+| [ben-ai-changes](mods/ben-ai-changes/CHANGES.md) | Not a mod: the changes made to Ben AI's `/mods` pane (only installed mods, who made each, commands last, On and Off buttons) and to `/shape` (one shared on/off switch) |
 
 ## Where the mods come from
 
@@ -30,7 +30,7 @@ I found these mods in three videos. Mods by other people are **not** in this rep
 |---|---|---|---|
 | [Nate Herk: Claude Code Mods Are Game Changers. Set Up These 5 NOW.](https://www.youtube.com/watch?v=9hetShMMp2s) | cache-keeper, collision-guard | `/cache`, `/board`, `/guard` (also `/collision-guard`) | No: Nate's mods, from the `nateherk-mods` marketplace. My small cache-keeper changes are in [nate-herk-changes](mods/nate-herk-changes/CHANGES.md). |
 | [Tristen O'Brien: 5 MORE Claude Code MODS You Need](https://www.youtube.com/watch?v=aD-h7Bcn5OY) | Prompt master, Daily challenge | `/prompt-upgrade`, `/challenge` | Yes: my own versions, [prompt-upgrade](#2-prompt-upgrade) and [daily-challenge](#4-daily-challenge), built from his ideas. **More of his mods:** [tristenobrien.ai](https://tristenobrien.ai/) |
-| [Ben AI: 9 Insane Claude Mods I Already Can't Live Without](https://www.youtube.com/watch?v=bTqizdva04g) | brain-dump, helper-desk, mods | `/shape`, `/helpers`, `/mods` (the "switchboard" pane) | No: Ben's mods, from the `benai-mods` marketplace. My change to the `/mods` pane is in [ben-ai-changes](mods/ben-ai-changes/CHANGES.md). |
+| [Ben AI: 9 Insane Claude Mods I Already Can't Live Without](https://www.youtube.com/watch?v=bTqizdva04g) | brain-dump, helper-desk, mods | `/shape`, `/helpers`, `/mods` (the "switchboard" pane) | No: Ben's mods, from the `benai-mods` marketplace. My changes to `/mods` and `/shape` are in [ben-ai-changes](mods/ben-ai-changes/CHANGES.md). |
 
 ## Skills
 
