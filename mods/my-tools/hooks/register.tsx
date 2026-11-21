@@ -3,10 +3,13 @@ import type { Register } from 'claude-code'
 
 const TITLE = "Shafaaf's Tools"
 
+const PER_ROW = 3
+
 const isOpen = atom({ plugin: 'my-tools', key: 'isOpen' } as const, false)
 
 // One row per mod; clicking the row runs it. To add a mod: add a row here, then a case in runMod below.
 const MODS = [
+  { key: 'mods', name: 'Mods', blurb: 'on / off' },
   { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts' },
   { key: 'daily-challenge', name: 'Daily Challenge', blurb: 'one a day' },
   { key: 'helper-desk', name: 'Helper Desk', blurb: '(subagents)' },
@@ -80,6 +83,11 @@ export const register: Register = on => {
         await update($, isOpen, () => false)
         await $.command.run({ command: 'challenge', args: '' })
       }
+      // Ben AI's mods plugin: /mods opens its pane that turns each mod on or off.
+      if (key === 'mods') {
+        await update($, isOpen, () => false)
+        await $.command.run({ command: 'mods', args: '' })
+      }
       // Ben AI's helper-desk mod: /helpers opens its side pane of subagent cards.
       if (key === 'helper-desk') {
         await update($, isOpen, () => false)
@@ -101,22 +109,21 @@ export const register: Register = on => {
           </Button>
         </Box>
         <Text dimColor>── M O D S</Text>
-        {/* Two columns: the first half of MODS on the left, the rest on the right.
-            The whole row is the button: no separate button on the right, which
-            overlapped the rows in the desktop app. */}
-        <Box flexDirection="row">
-          {[MODS.slice(0, Math.ceil(MODS.length / 2)), MODS.slice(Math.ceil(MODS.length / 2))].map((column, c) => (
-            <Box key={`col-${c}`} flexDirection="column" width="50%">
-              {column.map(mod => (
+        {/* Three mods per row, in MODS order. The whole row is the button: no
+            separate button on the right, which overlapped the rows in the desktop app. */}
+        {Array.from({ length: Math.ceil(MODS.length / PER_ROW) }, (_, r) => MODS.slice(r * PER_ROW, r * PER_ROW + PER_ROW)).map((row, r) => (
+          <Box key={`menu-row-${r}`} flexDirection="row">
+            {row.map(mod => (
+              <Box key={`cell-${mod.key}`} width={`${Math.floor(100 / PER_ROW)}%`}>
                 <Button key={`mod-${mod.key}`} plain onPress={() => runMod(mod.key)}>
                   <Text color="success">● </Text>
                   <Text bold>{mod.name}</Text>
                   <Text dimColor>  {mod.blurb}</Text>
                 </Button>
-              ))}
-            </Box>
-          ))}
-        </Box>
+              </Box>
+            ))}
+          </Box>
+        ))}
       </Box>
     )
   })

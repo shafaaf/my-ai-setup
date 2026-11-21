@@ -1,0 +1,308 @@
+diff -ru a/plugins/mods/hooks/register.test.tsx b/plugins/mods/hooks/register.test.tsx
+--- a/plugins/mods/hooks/register.test.tsx	2026-11-21 16:11:42
++++ b/plugins/mods/hooks/register.test.tsx	2026-11-21 16:15:34
+@@ -2,6 +2,35 @@
+ 
+ const props = { title: 'Mods', isFocused: false, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } as never
+ 
++// Ben's seven known mods, installed as folders in <config>/mods (matched by the end of the
++// path), so their rows show: the pane lists a known mod only when it is found on disk.
++const KNOWN = ['cache-clock', 'handoff', 'screen-share', 'brain-dump', 'reflect', 'helper-desk', 'chat-inventory']
++const knownDisk: Record<string, string> = Object.fromEntries(
++  KNOWN.flatMap(n => [
++    [`/mods/${n}/.claude-plugin/plugin.json`, JSON.stringify({ name: n })],
++    [`/mods/${n}/hooks/hooks.json`, JSON.stringify({ modules: ['./register.tsx'] })],
++    [`/mods/${n}/hooks/register.tsx`, "'switches.json'"],
++  ]),
++)
++const knownAt = (path: string) => Object.keys(knownDisk).find(k => path.endsWith(k))
++// The fs.exists, fs.read and fs.list hooks of a machine with only the known mods, plus `files`.
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++function installKnown(on: any, files: Record<string, string>) {
++  on('fs.exists', async ($: unknown, e: { path: string }) => ({ value: e.path in files || knownAt(e.path) !== undefined }) as never)
++  on('fs.read', async ($: unknown, e: { path: string }) => {
++    if (e.path in files) return { value: files[e.path] } as never
++    const k = knownAt(e.path)
++    if (k === undefined) throw new Error(`ENOENT ${e.path}`)
++    return { value: knownDisk[k] } as never
++  })
++  on('fs.list', async ($: unknown, e: { path?: string }) => {
++    const path = (e.path ?? '').replace(/\/+$/, '')
++    if (path.endsWith('/mods')) return { value: KNOWN.map(name => ({ name, kind: 'dir', size: 0, mtimeMs: 0, isLink: false })) } as never
++    if (KNOWN.some(n => path.endsWith(`/mods/${n}/hooks`))) return { value: ['hooks.json', 'register.tsx'].map(name => ({ name, kind: 'file', size: 10, mtimeMs: 0, isLink: false })) } as never
++    return { value: [] } as never
++  })
++}
++
+ for (const surface of ['desktop', 'terminal'] as const) {
+   test(`switches a mod off, and Show opens a side pane (${surface})`, { timeoutMs: 20000 }, async ($, on) => {
+     const files: Record<string, string> = {}
+@@ -17,18 +46,12 @@
+       return { value: { isPlaced: true } } as never
+     })
+     on('process.run', async () => ({ value: { exitCode: 0, stdout: '', stderr: '' } }) as never)
+-    on('fs.exists', async ($, e) => ({ value: (e as { path: string }).path in files }) as never)
+-    on('fs.read', async ($, e) => {
+-      const path = (e as { path: string }).path
+-      if (!(path in files)) throw new Error(`ENOENT ${path}`)
+-      return { value: files[path] } as never
+-    })
++    installKnown(on, files)
+     on('fs.write', async ($, e) => {
+       const { path, text } = e as { path: string; text: string }
+       files[path] = text
+       return { value: undefined } as never
+     })
+-    on('fs.list', async () => ({ value: [] }) as never)
+     mock.env(on, {})
+ 
+     await $.session.start({ source: 'startup', cwd: '/Users/test/vault', surface, isInteractive: true } as never)
+@@ -82,18 +105,12 @@
+     on('command.register', async () => ({ value: undefined }) as never)
+     mock.clock(on, { now: new Date(2026, 9, 15, 21, 0).getTime() })
+     on('process.run', async () => ({ value: { exitCode: 0, stdout: '', stderr: '' } }) as never)
+-    on('fs.exists', async ($, e) => ({ value: (e as { path: string }).path in files }) as never)
+-    on('fs.read', async ($, e) => {
+-      const path = (e as { path: string }).path
+-      if (!(path in files)) throw new Error(`ENOENT ${path}`)
+-      return { value: files[path] } as never
+-    })
++    installKnown(on, files)
+     on('fs.write', async ($, e) => {
+       const { path, text } = e as { path: string; text: string }
+       files[path] = text
+       return { value: undefined } as never
+     })
+-    on('fs.list', async () => ({ value: [] }) as never)
+     mock.env(on, {})
+ 
+     await $.session.start({ source: 'startup', cwd: '/Users/test/vault', surface, isInteractive: true } as never)
+@@ -120,18 +137,12 @@
+     on('command.register', async () => ({ value: undefined }) as never)
+     mock.clock(on, { now: new Date(2026, 9, 15, 21, 0).getTime() })
+     on('process.run', async () => ({ value: { exitCode: 0, stdout: '', stderr: '' } }) as never)
+-    on('fs.exists', async ($, e) => ({ value: (e as { path: string }).path in files }) as never)
+-    on('fs.read', async ($, e) => {
+-      const path = (e as { path: string }).path
+-      if (!(path in files)) throw new Error(`ENOENT ${path}`)
+-      return { value: files[path] } as never
+-    })
++    installKnown(on, files)
+     on('fs.write', async ($, e) => {
+       const { path, text } = e as { path: string; text: string }
+       files[path] = text
+       return { value: undefined } as never
+     })
+-    on('fs.list', async () => ({ value: [] }) as never)
+     mock.env(on, {})
+ 
+     await $.session.start({ source: 'startup', cwd: '/Users/test/vault', surface, isInteractive: true } as never)
+@@ -182,9 +193,11 @@
+   '/.claude/dev-mods/sid-123/brand-new/.claude-plugin/plugin.json': JSON.stringify({ name: 'brand-new', description: 'Made in this chat' }),
+   '/.claude/dev-mods/sid-123/brand-new/hooks/hooks.json': JSON.stringify({ modules: ['./register.tsx'] }),
+   '/.claude/dev-mods/sid-123/brand-new/hooks/register.tsx': "'switches.json'",
++  // The other known mods, installed, so the old table shows in full.
++  ...Object.fromEntries(Object.entries(knownDisk).filter(([k]) => !k.startsWith('/mods/helper-desk/')).map(([k, v]) => [`/.claude${k}`, v])),
+ }
+ const dirs: Record<string, string[]> = {
+-  '/.claude/mods': ['zeta-notes', 'plain-tool', 'not-a-mod', 'mods', 'helper-desk'],
++  '/.claude/mods': ['zeta-notes', 'plain-tool', 'not-a-mod', 'mods', ...KNOWN],
+   '/.claude/dev-mods/sid-123': ['brand-new'],
+   '/.claude/plugins/cache': ['anthropic'],
+   '/.claude/plugins/cache/anthropic': ['replay-theater'],
+@@ -290,18 +303,12 @@
+       ran.push(argv)
+       return { value: { exitCode: 0, stdout: argv[0] === 'uname' ? s.uname : '', stderr: '' } } as never
+     })
+-    on('fs.exists', async ($, e) => ({ value: (e as { path: string }).path in files }) as never)
+-    on('fs.read', async ($, e) => {
+-      const path = (e as { path: string }).path
+-      if (!(path in files)) throw new Error(`ENOENT ${path}`)
+-      return { value: files[path] } as never
+-    })
++    installKnown(on, files)
+     on('fs.write', async ($, e) => {
+       const { path, text } = e as { path: string; text: string }
+       files[path] = text
+       return { value: undefined } as never
+     })
+-    on('fs.list', async () => ({ value: [] }) as never)
+     mock.env(on, { ...s.env })
+ 
+     await $.session.start({ source: 'startup', cwd: '/work', surface: 'terminal', isInteractive: true } as never)
+@@ -314,5 +321,84 @@
+     expect(JSON.parse(files[at] ?? '{}'), `switches.json at ${s.want}; written: ${Object.keys(files).join(', ')}`).toEqual({ 'cache-clock': false })
+     expect(await v.find({ text: 'Cache Clock is off in every chat.' }), 'no error note').toBeDefined()
+     if ('OS' in s.env) expect(ran.some(a => a[0] === 'mkdir'), 'no mkdir on Windows').toBe(false)
++  })
++}
++
++// Local change (Shafaaf): a known mod shows only when installed, and mods in <config>/skills are found.
++const skillDisk: Record<string, string> = {
++  '/.claude/mods/helper-desk/.claude-plugin/plugin.json': JSON.stringify({ name: 'helper-desk', author: { name: 'Ben AI', url: 'https://www.benai.co' } }),
++  '/.claude/mods/helper-desk/hooks/hooks.json': JSON.stringify({ modules: ['./register.tsx'] }),
++  '/.claude/mods/helper-desk/hooks/register.tsx': "'switches.json'",
++  '/.claude/skills/wave-status/.claude-plugin/plugin.json': JSON.stringify({ name: 'wave-status', description: 'Shows the wave', author: 'Shafaaf' }),
++  '/.claude/skills/no-author/.claude-plugin/plugin.json': JSON.stringify({ name: 'no-author' }),
++  '/.claude/skills/no-author/hooks/hooks.json': JSON.stringify({ modules: ['./register.tsx'] }),
++  '/.claude/skills/no-author/hooks/register.tsx': "'switches.json'",
++  '/.claude/skills/wave-status/hooks/hooks.json': JSON.stringify({ modules: ['./register.tsx'] }),
++  '/.claude/skills/wave-status/hooks/register.tsx': "'switches.json'",
++  '/.claude/skills/plain-skill/SKILL.md': '# A skill, not a mod',
++}
++const skillDirs: Record<string, { name: string; isLink: boolean }[]> = {
++  '/.claude/mods': [{ name: 'helper-desk', isLink: false }],
++  '/.claude/skills': [
++    { name: 'wave-status', isLink: true },
++    { name: 'no-author', isLink: true },
++    { name: 'plain-skill', isLink: true },
++  ],
++}
++
++for (const surface of ['desktop', 'terminal'] as const) {
++  test(`hides known mods that are not installed, and finds mods in the skills folder (${surface})`, { timeoutMs: 20000 }, async ($, on) => {
++    const files: Record<string, string> = {}
++    const at = (path: string) => Object.keys(skillDisk).find(k => path.endsWith(k))
++    on('session.start', async ($, e) => ({ cwd: e.cwd }) as never)
++    on('session.id', async () => ({ value: 'sid-7' }) as never)
++    on('command.register', async () => ({ value: undefined }) as never)
++    mock.clock(on, { now: new Date(2026, 10, 21, 12, 0).getTime() })
++    on('ui.open', async () => ({ value: { isPlaced: true } }) as never)
++    on('process.run', async () => ({ value: { exitCode: 0, stdout: '', stderr: '' } }) as never)
++    on('fs.exists', async ($, e) => {
++      const path = (e as { path: string }).path
++      return { value: path in files || at(path) !== undefined } as never
++    })
++    on('fs.read', async ($, e) => {
++      const path = (e as { path: string }).path
++      if (path in files) return { value: files[path] } as never
++      const k = at(path)
++      if (k === undefined) throw new Error(`ENOENT ${path}`)
++      return { value: skillDisk[k] } as never
++    })
++    on('fs.write', async ($, e) => {
++      const { path, text } = e as { path: string; text: string }
++      files[path] = text
++      return { value: undefined } as never
++    })
++    on('fs.list', async ($, e) => {
++      const path = ((e as { path?: string }).path ?? '').replace(/\/+$/, '')
++      const dir = Object.keys(skillDirs).find(k => path.endsWith(k))
++      // A skill folder is a symbolic link: kind "other" with isLink.
++      if (dir) return { value: (skillDirs[dir] ?? []).map(x => ({ name: x.name, kind: x.isLink ? 'other' : 'dir', size: 0, mtimeMs: 0, isLink: x.isLink })) } as never
++      const names = [...new Set(Object.keys(skillDisk).filter(k => path.endsWith(k.slice(0, k.lastIndexOf('/')))).map(k => k.slice(k.lastIndexOf('/') + 1)))]
++      return { value: names.map(name => ({ name, kind: 'file', size: 10, mtimeMs: 0, isLink: false })) } as never
++    })
++    mock.env(on, {})
++
++    await $.session.start({ source: 'startup', cwd: '/Users/test/vault', surface, isInteractive: true } as never)
++    await $.command.run({ command: 'mods', args: '' } as never)
++    const v = await $.ui.mount({ plugin: 'mods', surface, component: 'Pane', requestId: 'mods', props })
++
++    expect(await v.find({ text: 'Helper Desk' }), 'an installed known mod shows').toBeDefined()
++    for (const title of ['Cache Clock', 'Handoff (Refresh)', 'Screen-Share Mode', 'Reflect', 'Chat Inventory', 'Brain-Dump Shaper']) {
++      expect(await v.find({ text: title }), `${title} is not installed, so no row`).toBeUndefined()
++    }
++    expect(await v.find({ text: 'Wave Status' }), 'a mod in the skills folder shows').toBeDefined()
++    expect(await v.find({ text: 'Shows the wave' }), 'with its description').toBeDefined()
++    expect(await v.find({ text: 'Plain Skill' }), 'a plain skill is not a mod').toBeUndefined()
++    const order = (await v.findAll({ type: 'Box' })).map(b => b.key ?? '').filter(k => k.startsWith('row-')).map(k => k.slice(4))
++    expect(order, 'only what is installed').toEqual(['helper-desk', 'no-author', 'wave-status'])
++
++    // Who made each mod, from plugin.json "author" (an object with a name, or a plain string).
++    expect(await v.find({ text: /\(Ben AI\)/ }), 'author object').toBeDefined()
++    expect(await v.find({ text: /\(Shafaaf\)/ }), 'author string').toBeDefined()
++    expect(await v.find({ text: /No Author \(/ }), 'no author, no brackets').toBeUndefined()
+   })
+ }
+diff -ru a/plugins/mods/hooks/register.tsx b/plugins/mods/hooks/register.tsx
+--- a/plugins/mods/hooks/register.tsx	2026-11-21 16:11:42
++++ b/plugins/mods/hooks/register.tsx	2026-11-21 16:15:34
+@@ -7,8 +7,11 @@
+ // Refresh panel, also leaves an open request for this chat.
+ // The list is found on disk, not typed in: every folder under <config>/mods with a
+ // plugin.json and a hooks.json that has "modules", every CLAUDE_CODE_PLUGIN_DIRS
+-// folder, every plugin in <config>/plugins/installed_plugins.json, and this chat's own
++// folder, every plugin in <config>/plugins/installed_plugins.json, every mod under
++// <config>/skills (a skill folder that is also a plugin), and this chat's own
+ // <config>/dev-mods/<session id>/ mods. <config> is CLAUDE_CONFIG_DIR, else ~/.claude.
++// A known mod (MODS below) shows only when it is found on disk. Each row names who made
++// the mod, from plugin.json "author", in brackets after its title.
+ 
+ const PANE = 'mods'
+ const TITLE = 'Mods'
+@@ -22,7 +25,7 @@
+ // hide: has a Shown/Hidden switch. ask: Show also leaves an open request. tip: the slash command.
+ type Mod = { name: string; title: string; what: string; pane: boolean; hide: boolean; ask: boolean; tip: string }
+ // A row in the pane: a known mod or one found on disk. switchable: its source reads switches.json.
+-type Row = Mod & { switchable: boolean; chatOnly: boolean }
++type Row = Mod & { switchable: boolean; chatOnly: boolean; author?: string }
+ 
+ const MODS: readonly Mod[] = [
+   { name: 'cache-clock', title: 'Cache Clock', what: 'Counts down until the cache goes cold', pane: false, hide: true, ask: false, tip: '/cacheclock to show or hide' },
+@@ -272,8 +275,12 @@
+   const source = await hooksSource($, dir)
+   const known = MODS.find(m => m.name === name)
+   const commands = commandsIn(source).map(c => `/${c}`)
++  // Who made it: plugin.json "author", an object with a name or a plain string.
++  const by = plugin.author
++  const author = typeof by === 'string' ? by : by && typeof by === 'object' ? (by as Record<string, unknown>).name : undefined
+   return {
+     name,
++    author: typeof author === 'string' && author.trim() ? author.trim() : undefined,
+     title: known?.title ?? titleCase(name),
+     what: known?.what ?? (typeof plugin.description === 'string' ? plugin.description : ''),
+     tip: known?.tip ?? commands.join(', '),
+@@ -285,7 +292,7 @@
+   }
+ }
+ 
+-// Known mods first in their old order, then new ones A to Z, then this chat's own.
++// Installed known mods first in their old order, then new ones A to Z, then this chat's own.
+ async function scan($: EngineInterface): Promise<Row[]> {
+   const base = claudeDirOf($)
+   const found = new Map<string, Row>()
+@@ -294,6 +301,8 @@
+   for (const d of await envDirs($)) dirs.push([d, false])
+   for (const d of await installedDirs($)) dirs.push([d, false])
+   for (const d of await cacheDirs($)) dirs.push([d, false])
++  // A skill folder can also be a plugin with mods, loaded from <config>/skills.
++  for (const d of await listDirs($, `${base}/skills`)) dirs.push([d, false])
+   if (sid) for (const d of await listDirs($, `${base}/dev-mods/${sid}`)) dirs.push([d, true])
+   const seen = new Set<string>()
+   for (const [dir, chatOnly] of dirs) {
+@@ -302,11 +311,14 @@
+     const row = await inspect($, dir, chatOnly)
+     if (row && !found.has(row.name)) found.set(row.name, row)
+   }
+-  const rows: Row[] = MODS.map(m => {
++  // Known mods keep their order and extras, but only the ones installed here.
++  const rows: Row[] = []
++  for (const m of MODS) {
+     const hit = found.get(m.name)
++    if (!hit) continue
+     found.delete(m.name)
+-    return { ...m, switchable: hit ? hit.switchable : true, chatOnly: hit ? hit.chatOnly : false }
+-  })
++    rows.push({ ...m, switchable: hit.switchable, chatOnly: hit.chatOnly, author: hit.author })
++  }
+   const rest = [...found.values()].sort((a, b) => a.title.localeCompare(b.title))
+   return [...rows, ...rest.filter(r => !r.chatOnly), ...rest.filter(r => r.chatOnly)]
+ }
+@@ -320,7 +332,7 @@
+   return rows
+ }
+ 
+-const sigOf = (rows: readonly Row[]) => rows.map(r => `${r.name}|${r.title}|${r.what}|${r.tip}|${r.switchable}|${r.chatOnly}`).join('\n')
++const sigOf = (rows: readonly Row[]) => rows.map(r => `${r.name}|${r.title}|${r.author ?? ''}|${r.what}|${r.tip}|${r.switchable}|${r.chatOnly}`).join('\n')
+ 
+ // While the pane is open, look again every 10 seconds and redraw when the list changed.
+ async function scanPoll($: EngineInterface) {
+@@ -452,6 +464,7 @@
+         <Box flexDirection="column" width={width}>
+           <Text bold dimColor={off} wrap="truncate-end">
+             {cut(m.title, width)}
++            {m.author ? <Text bold={false} dimColor>{` (${m.author})`}</Text> : null}
+           </Text>
+           {m.what ? (
+             <Text dimColor wrap="truncate-end">

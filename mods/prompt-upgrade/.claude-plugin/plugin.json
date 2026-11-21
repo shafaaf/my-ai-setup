@@ -1,6 +1,9 @@
 {
   "name": "prompt-upgrade",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "/prompt-upgrade <rough prompt>: a side pane that asks a few questions, then gives you an upgraded prompt to drop into your box",
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Shafaaf"
+  }
 }

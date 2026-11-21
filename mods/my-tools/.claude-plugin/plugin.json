@@ -1,1 +1,9 @@
-{ "name": "my-tools", "version": "0.1.10", "description": "A pop-out menu in the prompt footer that holds all your mods", "types": "./types/index.d.ts" }
+{
+  "name": "my-tools",
+  "version": "0.1.12",
+  "description": "A pop-out menu in the prompt footer that holds all your mods",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Shafaaf"
+  }
+}

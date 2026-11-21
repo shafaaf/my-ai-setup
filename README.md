@@ -20,6 +20,7 @@ This repository (`my-ai-setup`, formerly `my-mods`) is also a **plugin marketpla
 | [my-notifications-mod](#3-my-notifications-mod) | A card above the prompt when **another** Claude chat needs you |
 | [daily-challenge](#4-daily-challenge) | One small Claude Code exercise a day, with your streak, in a side pane |
 | [nate-herk-changes](mods/nate-herk-changes/CHANGES.md) | Not a mod: the small changes made to Nate Herk's cache-keeper mod |
+| [ben-ai-changes](mods/ben-ai-changes/CHANGES.md) | Not a mod: the change made to Ben AI's `/mods` pane (only installed mods, mods in the skills folder, and who made each mod) |
 
 ## Where the mods come from
 
@@ -29,7 +30,7 @@ I found these mods in three videos. Mods by other people are **not** in this rep
 |---|---|---|---|
 | [Nate Herk: Claude Code Mods Are Game Changers. Set Up These 5 NOW.](https://www.youtube.com/watch?v=9hetShMMp2s) | cache-keeper, collision-guard | `/cache`, `/board`, `/guard` (also `/collision-guard`) | No: Nate's mods, from the `nateherk-mods` marketplace. My small cache-keeper changes are in [nate-herk-changes](mods/nate-herk-changes/CHANGES.md). |
 | [Tristen O'Brien: 5 MORE Claude Code MODS You Need](https://www.youtube.com/watch?v=aD-h7Bcn5OY) | Prompt master, Daily challenge | `/prompt-upgrade`, `/challenge` | Yes: my own versions, [prompt-upgrade](#2-prompt-upgrade) and [daily-challenge](#4-daily-challenge), built from his ideas. **More of his mods:** [tristenobrien.ai](https://tristenobrien.ai/) |
-| [Ben AI: 9 Insane Claude Mods I Already Can't Live Without](https://www.youtube.com/watch?v=bTqizdva04g) | brain-dump, helper-desk, mods | `/shape`, `/helpers`, `/mods` (the "switchboard" pane) | No: Ben's mods, from the `benai-mods` marketplace. |
+| [Ben AI: 9 Insane Claude Mods I Already Can't Live Without](https://www.youtube.com/watch?v=bTqizdva04g) | brain-dump, helper-desk, mods | `/shape`, `/helpers`, `/mods` (the "switchboard" pane) | No: Ben's mods, from the `benai-mods` marketplace. My change to the `/mods` pane is in [ben-ai-changes](mods/ben-ai-changes/CHANGES.md). |
 
 ## Skills
 
@@ -103,11 +104,11 @@ Then `/reload-plugins` in open chats.
    ```
    ◆ S H A F A A F ' S   T O O L S                 Shafaaf's Tools ▼
    ── M O D S
-   ● Prompt Upgrade   better prompts       ● Helper Desk  (subagents)
-   ● Daily Challenge  one a day            ● Cache Board  (All sessions)
+   ● Mods  on / off              ● Prompt Upgrade  better prompts   ● Daily Challenge  one a day
+   ● Helper Desk  (subagents)    ● Cache Board  (All sessions)
    ```
 
-   **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`), from his video [9 Insane Claude Mods](https://www.youtube.com/watch?v=bTqizdva04g). That mod isn't in this repo; install it from the `benai-mods` marketplace first, or the button does nothing.
+   Three mods per row. **Mods** opens the Mods pane of Ben AI's `mods` plugin (the same as `/mods`), where you turn each mod on or off. **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`). Both are from his video [9 Insane Claude Mods](https://www.youtube.com/watch?v=bTqizdva04g) and aren't in this repo; install them from the `benai-mods` marketplace first, or the buttons do nothing.
 
 3. Click a row to run that mod.
 4. Click **Shafaaf's Tools ▼** (or `/tools` again) to close it.
