@@ -9,8 +9,8 @@ const isOpen = atom({ plugin: 'my-tools', key: 'isOpen' } as const, false)
 const MODS = [
   { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts' },
   { key: 'daily-challenge', name: 'Daily Challenge', blurb: 'one a day' },
-  { key: 'helper-desk', name: 'Helper Desk', blurb: 'subagents at work' },
-  { key: 'cache-board', name: 'Cache Board', blurb: 'every chat, warm or cold' },
+  { key: 'helper-desk', name: 'Helper Desk', blurb: '(subagents)' },
+  { key: 'cache-board', name: 'Cache Board', blurb: '(All sessions)' },
 ]
 
 export const register: Register = on => {
@@ -101,15 +101,22 @@ export const register: Register = on => {
           </Button>
         </Box>
         <Text dimColor>── M O D S</Text>
-        {/* The whole row is the button: no separate button on the right, which
+        {/* Two columns: the first half of MODS on the left, the rest on the right.
+            The whole row is the button: no separate button on the right, which
             overlapped the rows in the desktop app. */}
-        {MODS.map(mod => (
-          <Button key={`mod-${mod.key}`} plain onPress={() => runMod(mod.key)}>
-            <Text color="success">● </Text>
-            <Text bold>{mod.name}</Text>
-            <Text dimColor>  {mod.blurb}</Text>
-          </Button>
-        ))}
+        <Box flexDirection="row">
+          {[MODS.slice(0, Math.ceil(MODS.length / 2)), MODS.slice(Math.ceil(MODS.length / 2))].map((column, c) => (
+            <Box key={`col-${c}`} flexDirection="column" width="50%">
+              {column.map(mod => (
+                <Button key={`mod-${mod.key}`} plain onPress={() => runMod(mod.key)}>
+                  <Text color="success">● </Text>
+                  <Text bold>{mod.name}</Text>
+                  <Text dimColor>  {mod.blurb}</Text>
+                </Button>
+              ))}
+            </Box>
+          ))}
+        </Box>
       </Box>
     )
   })

@@ -92,10 +92,8 @@ Then `/reload-plugins` in open chats.
    ```
    ◆ S H A F A A F ' S   T O O L S                 Shafaaf's Tools ▼
    ── M O D S
-   ● Prompt Upgrade   better prompts
-   ● Daily Challenge  one a day
-   ● Helper Desk      subagents at work
-   ● Cache Board      every chat, warm or cold
+   ● Prompt Upgrade   better prompts       ● Helper Desk  (subagents)
+   ● Daily Challenge  one a day            ● Cache Board  (All sessions)
    ```
 
    **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`). That mod isn't in this repo; install it from the `benai-mods` marketplace first, or the button does nothing.
