@@ -1,8 +1,16 @@
 # my-mods
 
-Shafaaf's own **Claude Code mods**. A mod is a small plugin that changes what Claude Code shows or does: a menu, a side pane, a card above the prompt.
+Shafaaf's own **Claude Code mods** and **skills**, in one repository.
+
+| Folder | What's in it |
+|---|---|
+| [`mods/`](mods/) | **Mods**: small plugins that change what Claude Code shows or does (a menu, a side pane, a card above the prompt). Installed through this repo's plugin marketplace. |
+| [`skills/`](skills/) | **Skills**: instructions Claude Code and Codex follow when you call them by name (`/name` in Claude, `$name` in Codex). See [`skills/README.md`](skills/README.md). |
+| [`.claude-plugin/`](.claude-plugin/) | The marketplace file that lists the mods. |
 
 This repository is also a **plugin marketplace** named `my-mods`. That means Claude Code can install any of the mods below straight from GitHub.
+
+## Mods
 
 | Mod | In one line |
 |---|---|
@@ -10,10 +18,28 @@ This repository is also a **plugin marketplace** named `my-mods`. That means Cla
 | [prompt-upgrade](#2-prompt-upgrade) | Turns a rough prompt into a strong one, in a side pane |
 | [my-notifications-mod](#3-my-notifications-mod) | A card above the prompt when **another** Claude chat needs you |
 | [daily-challenge](#4-daily-challenge) | One small Claude Code exercise a day, with your streak, in a side pane |
+| [nate-herk-changes](mods/nate-herk-changes/CHANGES.md) | Not a mod: the one-line change made to Nate Herk's cache-keeper mod |
+
+## Skills
+
+| Skill | What it does |
+|---|---|
+| my-easy-explain | Explains code and workflows simply, for a new engineer |
+| my-storm-stanford-research | Multi-perspective, citation-checked HTML research briefing |
+| my-repos-sync | Pulls the default branch in every repo under a folder |
+| my-onboarding-guides-code | Beginner and intermediate onboarding guides for a repo |
+| my-cleanup-workstation | Cleans up local disk, worktrees and caches |
+| my-workflow-wave | Runs an approved multi-repo plan end to end |
+| my-workflow-wave-status | Shows where a running wave is (Claude pane, or Codex table) |
+| my-walkthrough-guide | Hands-on walkthroughs, one real example per turn |
+| my-review-all | Reviews every changed repo of a task together |
+| my-hello-interview-botfood-notes | Interview-study notes linking a Hello Interview guide to real BotFood examples |
+
+How to install them for Claude and Codex, and the rules for writing them, are in [`skills/README.md`](skills/README.md).
 
 ---
 
-## Install
+## Install the mods
 
 You need Claude Code. The mods work best in the **Claude desktop app**; most also work in the terminal (see each mod).
 
@@ -81,7 +107,7 @@ Then `/reload-plugins` in open chats.
 
 **Options:** none.
 
-**Adding a mod to the menu (for developers):** add a row to `MODS` in `my-tools/hooks/register.tsx`, then a matching `case` in `runMod`.
+**Adding a mod to the menu (for developers):** add a row to `MODS` in `mods/my-tools/hooks/register.tsx`, then a matching `case` in `runMod`.
 
 ---
 
@@ -185,7 +211,7 @@ Settings are saved and apply to every chat.
 - In **Bypass permissions** mode there are no permission prompts, so ⏳ cards mostly mean a chat asked you a question.
 - If you answer a question within about 5 seconds, its ⏳ card may never appear. That's expected.
 
-**How it works (for developers):** each chat writes a small heartbeat (its name, state, and when it last finished, asked, or was looked at) to the mod's shared store, which every chat on the computer can read. Every 5 seconds each chat reads the others' heartbeats and draws cards. Dismissed cards are saved in the same store, which is why a dismiss reaches every chat. The code is in `my-notifications-mod/hooks/register.tsx`.
+**How it works (for developers):** each chat writes a small heartbeat (its name, state, and when it last finished, asked, or was looked at) to the mod's shared store, which every chat on the computer can read. Every 5 seconds each chat reads the others' heartbeats and draws cards. Dismissed cards are saved in the same store, which is why a dismiss reaches every chat. The code is in `mods/my-notifications-mod/hooks/register.tsx`.
 
 ---
 
@@ -279,7 +305,7 @@ YOUR YEAR ───────────────────────�
 - Some challenges name a slash command or a key. Each one was checked on Claude Code 2.1.317. If one isn't on your version, ask Claude how to do it.
 - The **Daily challenge** button under the prompt shows in the terminal. In the desktop app, use the Shafaaf's Tools row or `/challenge`.
 
-**How it works (for developers):** the challenges are in `daily-challenge/hooks/challenges.ts`, the rules (pick, swap, undo, streaks) in `hooks/logic.ts`, and the pane in `hooks/register.tsx`. Run the tests with `claude plugin test daily-challenge`. They check 365 unique challenges, all 7 themes in any week, never repeating a completed one, streaks, the finished state, and every button.
+**How it works (for developers):** the challenges are in `mods/daily-challenge/hooks/challenges.ts`, the rules (pick, swap, undo, streaks) in `hooks/logic.ts`, and the pane in `hooks/register.tsx`. Run the tests with `claude plugin test mods/daily-challenge`. They check 365 unique challenges, all 7 themes in any week, never repeating a completed one, streaks, the finished state, and every button.
 
 ---
 
@@ -375,15 +401,18 @@ Keeping every chat warm forever would spend money on chats you've left behind, s
 
 **Tip:** leave `/cache ttl` on `auto`. Setting `5` when your chats really use a 60-minute cache makes every chat say "cools in 5m" for no reason.
 
-**Local change:** in this setup, one line of cache-keeper is changed so `ctx` shows a **percentage** instead of a token count. Nate's release shows a token count, like `ctx 393k`. The change and how to re-apply it are in [`nate-herk-changes/`](nate-herk-changes/CHANGES.md).
+**Local change:** in this setup, one line of cache-keeper is changed so `ctx` shows a **percentage** instead of a token count. Nate's release shows a token count, like `ctx 393k`. The change and how to re-apply it are in [`mods/nate-herk-changes/`](mods/nate-herk-changes/CHANGES.md).
 
 ---
 
 ## Developing these mods
 
-1. The code lives in one folder per mod: `<mod>/hooks/register.tsx` (the main file) and `<mod>/.claude-plugin/plugin.json` (name and version).
+A new mod goes in `mods/<name>/`, with a matching entry in `.claude-plugin/marketplace.json` (`"source": "./mods/<name>"`).
+
+
+1. The code lives in one folder per mod: `mods/<mod>/hooks/register.tsx` (the main file) and `mods/<mod>/.claude-plugin/plugin.json` (name and version).
 2. After a change, **bump `version`** in `plugin.json`. Claude Code only reinstalls when the version changes.
-3. Check it: `claude plugin validate <mod folder>`, then run its tests with `claude plugin test <mod folder>`.
+3. Check it: `claude plugin validate mods/<mod>`, then run its tests with `claude plugin test mods/<mod>`.
 4. Install it from your local copy:
 
    ```

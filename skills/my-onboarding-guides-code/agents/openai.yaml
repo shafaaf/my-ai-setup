@@ -1,0 +1,7 @@
+interface:
+  display_name: "My Onboarding Guides Code"
+  short_description: "Parallel beginner and intermediate onboarding guides"
+  default_prompt: "Use $my-onboarding-guides-code to create personal beginner and intermediate Markdown guides with two parallel writing agents, shared evidence, clear customer and system walkthroughs, and compact AWS references."
+
+policy:
+  allow_implicit_invocation: false

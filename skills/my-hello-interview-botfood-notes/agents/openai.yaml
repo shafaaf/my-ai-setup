@@ -1,0 +1,5 @@
+interface:
+  display_name: "My Hello Interview Botfood Notes"
+  short_description: "Turn interview guides into Botfood study notes"
+policy:
+  allow_implicit_invocation: false

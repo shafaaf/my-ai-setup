@@ -1,0 +1,7 @@
+interface:
+  display_name: "Storm Stanford Research"
+  short_description: "Multi-perspective research with citation verification"
+  default_prompt: "Use $my-storm-stanford-research to create a source-checked HTML briefing on my topic."
+
+policy:
+  allow_implicit_invocation: false
