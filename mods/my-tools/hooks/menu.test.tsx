@@ -96,7 +96,7 @@ test('the Cache Board row closes the menu and runs /board', async ($, on) => {
   await band.unmount()
 })
 
-test('the Mods row closes the menu and runs /mods', async ($, on) => {
+test('the All Mods row closes the menu and runs /mods', async ($, on) => {
   const ran: { command: string; args: string }[] = []
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
@@ -109,14 +109,14 @@ test('the Mods row closes the menu and runs /mods', async ($, on) => {
   })
   const band = await $.ui.mount({ ...BAND, surface: 'desktop' })
   await band.press({ key: 'my-tools-pill' })
-  expect(await band.find({ type: 'Text', text: /^Mods$/ })).toBeDefined()
+  expect(await band.find({ type: 'Text', text: /^All Mods$/ })).toBeDefined()
   await band.press({ key: 'mod-mods' })
   expect(ran).toEqual([{ command: 'mods', args: '' }])
-  expect(await band.find({ type: 'Text', text: /^Mods$/ })).toBeUndefined()
+  expect(await band.find({ type: 'Text', text: /^All Mods$/ })).toBeUndefined()
   await band.unmount()
 })
 
-test('the menu shows three mods per row, Mods first', async ($, on) => {
+test('the menu shows three mods per row, All Mods first, and wraps when narrow', async ($, on) => {
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
     return <Text>engine</Text>
@@ -125,6 +125,12 @@ test('the menu shows three mods per row, Mods first', async ($, on) => {
   await band.press({ key: 'my-tools-pill' })
   const boxes = (await band.findAll({ type: 'Box' })).map(b => b.key ?? '')
   expect(boxes.filter(k => k.startsWith('menu-row-'))).toEqual(['menu-row-0', 'menu-row-1'])
+  // A narrow window wraps a row onto more lines instead of cutting mods off.
+  for (const key of ['menu-row-0', 'menu-row-1']) {
+    expect((await band.find({ key }))?.props, `${key} wraps`).toMatchObject({ flexDirection: 'row', flexWrap: 'wrap' })
+  }
+  const cell = (await band.find({ key: 'cell-mods' }))?.props as { width?: unknown } | undefined
+  expect(typeof cell?.width, 'cells have a fixed width in cells, not a % that squeezes').toBe('number')
   const buttons = (await band.findAll({ type: 'Button' })).map(b => b.key ?? '').filter(k => k.startsWith('mod-'))
   expect(buttons).toEqual(['mod-mods', 'mod-prompt-upgrade', 'mod-daily-challenge', 'mod-helper-desk', 'mod-cache-board'])
   await band.unmount()

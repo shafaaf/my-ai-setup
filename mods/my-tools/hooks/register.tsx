@@ -4,12 +4,14 @@ import type { Register } from 'claude-code'
 const TITLE = "Shafaaf's Tools"
 
 const PER_ROW = 3
+// Each mod's cell, in terminal cells: fits the longest row ("● Prompt Upgrade  better prompts").
+const CELL = 34
 
 const isOpen = atom({ plugin: 'my-tools', key: 'isOpen' } as const, false)
 
 // One row per mod; clicking the row runs it. To add a mod: add a row here, then a case in runMod below.
 const MODS = [
-  { key: 'mods', name: 'Mods', blurb: 'on / off' },
+  { key: 'mods', name: 'All Mods', blurb: '' },
   { key: 'prompt-upgrade', name: 'Prompt Upgrade', blurb: 'better prompts' },
   { key: 'daily-challenge', name: 'Daily Challenge', blurb: 'one a day' },
   { key: 'helper-desk', name: 'Helper Desk', blurb: '(subagents)' },
@@ -109,16 +111,17 @@ export const register: Register = on => {
           </Button>
         </Box>
         <Text dimColor>── M O D S</Text>
-        {/* Three mods per row, in MODS order. The whole row is the button: no
-            separate button on the right, which overlapped the rows in the desktop app. */}
+        {/* Three mods per row, in MODS order. A row wraps onto more lines when the
+            window is too narrow, so no mod is cut off. The whole cell is the button:
+            no separate button on the right, which overlapped the rows in the desktop app. */}
         {Array.from({ length: Math.ceil(MODS.length / PER_ROW) }, (_, r) => MODS.slice(r * PER_ROW, r * PER_ROW + PER_ROW)).map((row, r) => (
-          <Box key={`menu-row-${r}`} flexDirection="row">
+          <Box key={`menu-row-${r}`} flexDirection="row" flexWrap="wrap">
             {row.map(mod => (
-              <Box key={`cell-${mod.key}`} width={`${Math.floor(100 / PER_ROW)}%`}>
+              <Box key={`cell-${mod.key}`} width={CELL}>
                 <Button key={`mod-${mod.key}`} plain onPress={() => runMod(mod.key)}>
                   <Text color="success">● </Text>
                   <Text bold>{mod.name}</Text>
-                  <Text dimColor>  {mod.blurb}</Text>
+                  {mod.blurb ? <Text dimColor>  {mod.blurb}</Text> : null}
                 </Button>
               </Box>
             ))}
