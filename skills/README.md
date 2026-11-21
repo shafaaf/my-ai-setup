@@ -1,6 +1,6 @@
 # My skills: one copy for Claude and Codex
 
-Every skill I wrote lives **here**, in `skills/<name>/` of the `my-mods` repo. Both tools read these exact files, so one edit reaches both.
+Every skill I wrote lives **here**, in `skills/<name>/` of the `my-ai-setup` repo. Both tools read these exact files, so one edit reaches both.
 
 ## How the two tools find them
 
@@ -20,7 +20,7 @@ On my Mac the repo is cloned at `~/.agents/mods`. Two links point each tool at i
 ## Set up on a new computer
 
 ```bash
-git clone git@github.com:shafaaf/my-mods.git ~/.agents/mods
+git clone git@github.com:shafaaf/my-ai-setup.git ~/.agents/mods
 mkdir -p ~/.agents/skills ~/.claude/skills
 for d in ~/.agents/mods/skills/*/; do n=$(basename "$d"); ln -sfn ../mods/skills/$n ~/.agents/skills/$n; ln -sfn ../../.agents/skills/$n ~/.claude/skills/$n; done
 ln -sfn ../mods/skills/README.md ~/.agents/skills/MY-SKILLS.md

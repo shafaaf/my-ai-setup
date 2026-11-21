@@ -1,4 +1,4 @@
-# my-mods
+# my-ai-setup
 
 Shafaaf's own **Claude Code mods** and **skills**, in one repository.
 
@@ -8,7 +8,7 @@ Shafaaf's own **Claude Code mods** and **skills**, in one repository.
 | [`skills/`](skills/) | **Skills**: instructions Claude Code and Codex follow when you call them by name (`/name` in Claude, `$name` in Codex). See [`skills/README.md`](skills/README.md). |
 | [`.claude-plugin/`](.claude-plugin/) | The marketplace file that lists the mods. |
 
-This repository is also a **plugin marketplace** named `my-mods`. That means Claude Code can install any of the mods below straight from GitHub.
+This repository (`my-ai-setup`, formerly `my-mods`) is also a **plugin marketplace** named `my-mods`, so Claude Code can install any of the mods below straight from GitHub. The marketplace keeps the old name so installed mods (`<mod>@my-mods`) keep working.
 
 ## Mods
 
@@ -49,13 +49,13 @@ You need Claude Code. The mods work best in the **Claude desktop app**; most als
 2. Type the install line for the mod you want, at the prompt:
 
    ```
-   /plugin install my-tools --marketplace shafaaf/my-mods
-   /plugin install prompt-upgrade --marketplace shafaaf/my-mods
-   /plugin install my-notifications-mod --marketplace shafaaf/my-mods
-   /plugin install daily-challenge --marketplace shafaaf/my-mods
+   /plugin install my-tools --marketplace shafaaf/my-ai-setup
+   /plugin install prompt-upgrade --marketplace shafaaf/my-ai-setup
+   /plugin install my-notifications-mod --marketplace shafaaf/my-ai-setup
+   /plugin install daily-challenge --marketplace shafaaf/my-ai-setup
    ```
 
-3. The first time, Claude Code asks whether to add the `shafaaf/my-mods` marketplace. Answer `y`.
+3. The first time, Claude Code asks whether to add the `shafaaf/my-ai-setup` marketplace. Answer `y`.
 4. Pick a scope. `user` means "in every project on this computer", which is usually what you want.
 5. Load it:
    - **New chats** load the mod on their own.
