@@ -114,13 +114,30 @@ function ciText(entry: PrLive | undefined) {
   return entry.pass > 0 ? `${stage} · ✅ ${entry.pass} passed` : stage
 }
 
-function findingsText(r: { red?: number; orange?: number; yellow?: number }) {
+/** The Review cell: a risky marker, then the model of each round ("Claude r1 → Codex r2"). */
+export function reviewText(r: Pick<WaveRepo, 'risky' | 'reviewModels' | 'reviewRound'>) {
+  const models = (r.reviewModels ?? []).map(m => m.trim()).filter(Boolean)
+  const rounds = models.length
+    ? models.map((m, i) => `${m} r${i + 1}`).join(' → ')
+    : r.reviewRound
+      ? `round ${r.reviewRound}`
+      : 'not yet'
+  return r.risky ? `⚠️ risky · ${rounds}` : rounds
+}
+
+/** The Findings cell: the open counts, then the one-line titles of open 🔴/🟠 findings. */
+export function findingsText(r: Pick<WaveRepo, 'red' | 'orange' | 'yellow' | 'openFindings'>) {
   const parts = [
     r.red ? `🔴 ${r.red}` : '',
     r.orange ? `🟠 ${r.orange}` : '',
     r.yellow ? `🟡 ${r.yellow}` : '',
   ].filter(Boolean)
-  return parts.length ? parts.join(' ') : 'none'
+  const counts = parts.length ? parts.join(' ') : 'none'
+  const titles = (r.openFindings ?? [])
+    .filter(f => f.title?.trim() && (f.level === 'red' || f.level === 'orange'))
+    .sort((a, b) => (a.level === b.level ? 0 : a.level === 'red' ? -1 : 1))
+    .map(f => `${f.level === 'red' ? '🔴' : '🟠'} ${f.title.trim()}`)
+  return titles.length ? `${counts}: ${titles.join('; ')}` : counts
 }
 
 const cell = (text: string) => text.replace(/\|/g, '\\|').replace(/\n/g, ' ')
@@ -215,11 +232,22 @@ async function openPane($: Ctx) {
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
+    // A plain command (not the skill's name) so the my-tools menu can open the
+    // pane without starting a Claude turn.
+    await $.command.register({ name: 'wave-pane', description: 'Open the Wave status pane' })
     await refreshFile($)
     void refreshPrs($)
     $.clock.every(20000, () => refreshFile($))
     $.clock.every(120000, () => refreshPrs($))
     return next(e)
+  })
+
+  on('command.run', { command: 'wave-pane' }, async $ => {
+    // Open first: a pane opened after an await counts as unasked.
+    await $.ui.open({ id: PANE, title: 'Wave status' })
+    await refreshFile($)
+    void refreshPrs($)
+    return { text: 'Wave status pane opened.' }
   })
 
   on('prompt.submit', async ($, e, next) => {
@@ -251,8 +279,7 @@ export const register: Register = on => {
     const rows = wave.repos.map(r => {
       const key = r.prNumber && r.repoSlug ? `${r.repoSlug}#${r.prNumber}` : ''
       const pr = r.pr ? `[#${r.prNumber ?? 'PR'}](${r.pr})` : '—'
-      const round = r.reviewRound ? `round ${r.reviewRound}` : 'not yet'
-      return `| ${cell(r.name)} | ${cell(r.stage)} | ${pr} | ${ciText(prs[key])} | ${round} | ${findingsText(r)} | ${cell(summaryText(r, prs[key]))} |`
+      return `| ${cell(r.name)} | ${cell(r.stage)} | ${pr} | ${ciText(prs[key])} | ${cell(reviewText(r))} | ${cell(findingsText(r))} | ${cell(summaryText(r, prs[key]))} |`
     })
     const flags = (wave.flags ?? []).filter(Boolean)
     const keys = ticketKeys(wave.ticket)

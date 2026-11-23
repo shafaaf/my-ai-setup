@@ -1,6 +1,6 @@
 {
   "name": "my-tools",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "A pop-out menu in the prompt footer that holds all your mods",
   "types": "./types/index.d.ts",
   "author": {

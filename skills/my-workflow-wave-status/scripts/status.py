@@ -133,6 +133,25 @@ def ago(iso):
         return iso
 
 
+
+def review_text(r):
+    """The Review cell: a risky marker, then the model of each round ("Claude r1 → Codex r2")."""
+    models = [m.strip() for m in (r.get("reviewModels") or []) if m and m.strip()]
+    if models:
+        rounds = " → ".join(f"{m} r{i}" for i, m in enumerate(models, 1))
+    else:
+        rounds = f"round {r['reviewRound']}" if r.get("reviewRound") else "not yet"
+    return f"⚠️ risky · {rounds}" if r.get("risky") else rounds
+
+
+def findings_text(r):
+    """The Findings cell: the open counts, then the one-line titles of open 🔴/🟠 findings."""
+    counts = " ".join(x for x in [f"🔴 {r['red']}" if r.get("red") else "", f"🟠 {r['orange']}" if r.get("orange") else "", f"🟡 {r['yellow']}" if r.get("yellow") else ""] if x) or "none"
+    found = [f for f in (r.get("openFindings") or []) if f.get("level") in ("red", "orange") and (f.get("title") or "").strip()]
+    found.sort(key=lambda f: 0 if f["level"] == "red" else 1)
+    titles = [f"{'🔴' if f['level'] == 'red' else '🟠'} {f['title'].strip()}" for f in found]
+    return f"{counts}: {'; '.join(titles)}" if titles else counts
+
 def main():
     path = ROOT / sys.argv[1] / "WAVE-STATUS.json" if len(sys.argv) > 1 else newest()
     if not path or not path.exists():
@@ -157,9 +176,9 @@ def main():
     print("|---|---|---|---|---|---|---|")
     for r, live in zip(repos, lives):
         pr = f"[#{r.get('prNumber', 'PR')}]({r['pr']})" if r.get("pr") else "—"
-        rnd = f"round {r['reviewRound']}" if r.get("reviewRound") else "not yet"
-        found = " ".join(x for x in [f"🔴 {r['red']}" if r.get("red") else "", f"🟠 {r['orange']}" if r.get("orange") else "", f"🟡 {r['yellow']}" if r.get("yellow") else ""] if x) or "none"
-        print(f"| {cell(r.get('name'))} | {cell(r.get('stage'))} | {pr} | {pr_cell(live)} | {rnd} | {found} | {cell(summary(r, live))} |")
+        rnd = review_text(r)
+        found = findings_text(r)
+        print(f"| {cell(r.get('name'))} | {cell(r.get('stage'))} | {pr} | {pr_cell(live)} | {cell(rnd)} | {cell(found)} | {cell(summary(r, live))} |")
     flags = [f for f in wave.get("flags", []) if f]
     print("\n**🚩 Red flags**\n")
     print("\n".join(f"- {f}" for f in flags) if flags else "None.")

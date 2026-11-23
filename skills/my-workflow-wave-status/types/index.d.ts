@@ -1,3 +1,6 @@
+/** One open review finding: its colour and a one-line title. */
+export type OpenFinding = { level: 'red' | 'orange'; title: string }
+
 /** One child session / repo in a wave, as the coordinator records it in WAVE-STATUS.json. */
 export type WaveRepo = {
   name: string
@@ -7,6 +10,12 @@ export type WaveRepo = {
   prNumber?: number
   repoSlug?: string
   reviewRound?: number
+  /** The model that ran each review round, in order, e.g. ["Claude", "Codex"]. */
+  reviewModels?: string[]
+  /** True for a risky PR (vault, sign-in probe, auth, cross-repo contract or API, migration, billing). */
+  risky?: boolean
+  /** One-line titles of the 🔴/🟠 findings still open. */
+  openFindings?: OpenFinding[]
   red?: number
   orange?: number
   yellow?: number

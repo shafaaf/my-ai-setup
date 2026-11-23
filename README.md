@@ -105,10 +105,10 @@ Then `/reload-plugins` in open chats.
    ◆ S H A F A A F ' S   T O O L S                 Shafaaf's Tools ▼
    ── M O D S
    ● All Mods                        ● Prompt Upgrade  better prompts  ● Daily Challenge  one a day
-   ● Helper Desk  (subagents)        ● Cache Board  (All sessions)
+   ● Helper Desk  (subagents)        ● Cache Board  (All sessions)     ● My Workflow Wave Status
    ```
 
-   Three mods per row; in a narrow window a row wraps onto more lines, so nothing is cut off. This menu is **quick access** to the mods you use most. **All Mods** opens the Mods pane of Ben AI's `mods` plugin (the same as `/mods`): the full list of every mod you have, who made it, its commands, and On/Off. **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`). Both are from his video [9 Insane Claude Mods](https://www.youtube.com/watch?v=bTqizdva04g) and aren't in this repo; install them from the `benai-mods` marketplace first, or the buttons do nothing.
+   Three mods per row; in a narrow window a row wraps onto more lines, so nothing is cut off. This menu is **quick access** to the mods you use most. **All Mods** opens the Mods pane of Ben AI's `mods` plugin (the same as `/mods`): the full list of every mod you have, who made it, its commands, and On/Off. **Helper Desk** opens the side pane of Ben AI's `helper-desk` mod (the same as `/helpers`). Both are from his video [9 Insane Claude Mods](https://www.youtube.com/watch?v=bTqizdva04g) and aren't in this repo; install them from the `benai-mods` marketplace first, or the buttons do nothing. **My Workflow Wave Status** opens the Wave status pane (the same as `/wave-pane`, or `/my-workflow-wave-status` without starting a Claude turn).
 
 3. Click a row to run that mod.
 4. Click **Shafaaf's Tools ▼** (or `/tools` again) to close it.

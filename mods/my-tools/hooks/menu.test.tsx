@@ -132,6 +132,26 @@ test('the menu shows three mods per row, All Mods first, and wraps when narrow',
   const cell = (await band.find({ key: 'cell-mods' }))?.props as { width?: unknown } | undefined
   expect(typeof cell?.width, 'cells have a fixed width in cells, not a % that squeezes').toBe('number')
   const buttons = (await band.findAll({ type: 'Button' })).map(b => b.key ?? '').filter(k => k.startsWith('mod-'))
-  expect(buttons).toEqual(['mod-mods', 'mod-prompt-upgrade', 'mod-daily-challenge', 'mod-helper-desk', 'mod-cache-board'])
+  expect(buttons).toEqual(['mod-mods', 'mod-prompt-upgrade', 'mod-daily-challenge', 'mod-helper-desk', 'mod-cache-board', 'mod-wave-status'])
+  await band.unmount()
+})
+
+test('the My Workflow Wave Status row closes the menu and runs /wave-pane', async ($, on) => {
+  const ran: { command: string; args: string }[] = []
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>engine</Text>
+  })
+  // Stands for the my-workflow-wave-status plugin's own command.
+  on('command.run', (_, e) => {
+    ran.push({ command: e.command, args: e.args })
+    return { text: 'Wave status pane opened.' }
+  })
+  const band = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await band.press({ key: 'my-tools-pill' })
+  expect(await band.find({ type: 'Text', text: /My Workflow Wave Status/ })).toBeDefined()
+  await band.press({ key: 'mod-wave-status' })
+  expect(ran).toEqual([{ command: 'wave-pane', args: '' }])
+  expect(await band.find({ type: 'Text', text: /My Workflow Wave Status/ })).toBeUndefined()
   await band.unmount()
 })

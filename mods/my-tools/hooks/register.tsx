@@ -16,6 +16,7 @@ const MODS = [
   { key: 'daily-challenge', name: 'Daily Challenge', blurb: 'one a day' },
   { key: 'helper-desk', name: 'Helper Desk', blurb: '(subagents)' },
   { key: 'cache-board', name: 'Cache Board', blurb: '(All sessions)' },
+  { key: 'wave-status', name: 'My Workflow Wave Status', blurb: '' },
 ]
 
 export const register: Register = on => {
@@ -99,6 +100,11 @@ export const register: Register = on => {
       if (key === 'cache-board') {
         await update($, isOpen, () => false)
         await $.command.run({ command: 'board', args: '' })
+      }
+      // My my-workflow-wave-status plugin: /wave-pane opens its Wave status pane.
+      if (key === 'wave-status') {
+        await update($, isOpen, () => false)
+        await $.command.run({ command: 'wave-pane', args: '' })
       }
     }
 
