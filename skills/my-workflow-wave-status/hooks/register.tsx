@@ -9,7 +9,7 @@ const STATUS_FILE = 'WAVE-STATUS.json'
 
 const status = atom({ plugin: 'my-workflow-wave-status', key: 'status' } as const, null, { shape: 'status-1' })
 const file = atom({ plugin: 'my-workflow-wave-status', key: 'file' } as const, '', { shape: 'file-1' })
-const live = atom({ plugin: 'my-workflow-wave-status', key: 'live' } as const, {}, { shape: 'live-2' })
+const live = atom({ plugin: 'my-workflow-wave-status', key: 'live' } as const, {}, { shape: 'live-3' })
 const error = atom({ plugin: 'my-workflow-wave-status', key: 'error' } as const, '', { shape: 'error-1' })
 
 type Ctx = EngineInterface
@@ -77,17 +77,19 @@ async function refreshPrs($: Ctx) {
         ['gh', 'pr', 'checks', String(repo.prNumber), '--repo', repo.repoSlug],
         { timeoutMs: 20000 },
       )
-      const buckets = checks.stdout
+      const rows = checks.stdout
         .split('\n')
-        .map(line => line.split('\t')[1])
-        .filter(Boolean)
+        .map(line => line.split('\t'))
+        .filter(cols => cols.length > 1 && cols[1])
       const [state = '?', draft = 'false'] = view.stdout.trim().split(' ')
       const entry: PrLive = {
         state,
         isDraft: draft === 'true',
-        pass: buckets.filter(b => b === 'pass').length,
-        fail: buckets.filter(b => b === 'fail').length,
-        pending: buckets.filter(b => b === 'pending').length,
+        pass: rows.filter(c => c[1] === 'pass').length,
+        fail: rows.filter(c => c[1] === 'fail').length,
+        pending: rows.filter(c => c[1] === 'pending').length,
+        total: rows.filter(c => c[1] !== 'skipping').length,
+        failed: rows.filter(c => c[1] === 'fail').map(c => c[0].trim()),
         checkedAt: await $.clock.now(),
       }
       await update($, live, all => ({ ...all, [key]: entry }))
@@ -104,14 +106,35 @@ function ago(iso: string, now: number) {
   return min < 1 ? 'just now' : min < 60 ? `${min} min ago` : `${Math.round(min / 60)} h ago`
 }
 
-function ciText(entry: PrLive | undefined) {
+const onDev = (r: Pick<WaveRepo, 'stage'>) => /on dev|active on dev|deployed/i.test(r.stage)
+
+/** The PR cell: the link, then merged / closed / draft / ready. */
+export function prText(r: Pick<WaveRepo, 'pr' | 'prNumber'>, entry: PrLive | undefined) {
+  if (!r.pr) return '—'
+  const link = `[#${r.prNumber ?? 'PR'}](${r.pr})`
+  if (!entry) return link
+  const state =
+    entry.state === 'MERGED' ? 'merged' : entry.state === 'CLOSED' ? 'closed' : entry.isDraft ? 'draft' : 'ready'
+  return `${link} · ${state}`
+}
+
+/**
+ * The CI/CD cell: green, running or red. Red says what fails: the
+ * coordinator's `ciNote` when it wrote one, else the failing check names.
+ */
+export function ciText(r: Pick<WaveRepo, 'pr' | 'stage' | 'ciNote'>, entry: PrLive | undefined) {
+  if (!r.pr) return 'No PR'
   if (!entry) return '—'
-  if (entry.state === 'MERGED') return '✅ merged'
-  if (entry.state === 'CLOSED') return '⛔ closed'
-  const stage = entry.isDraft ? '📝 draft' : '👀 ready'
-  if (entry.fail > 0) return `${stage} · 🔴 ${entry.fail} failed`
-  if (entry.pending > 0) return `${stage} · ⏳ ${entry.pending} running`
-  return entry.pass > 0 ? `${stage} · ✅ ${entry.pass} passed` : stage
+  if (entry.fail > 0) {
+    const names = entry.failed ?? []
+    const shown = names.slice(0, 3).join(', ') + (names.length > 3 ? ` +${names.length - 3} more` : '')
+    const why = r.ciNote?.trim() || (shown ? `Failing: ${shown}` : '')
+    return `🔴 Red · ${entry.fail} failed${why ? `: ${why}` : ''}`
+  }
+  if (entry.pending > 0) return `⏳ Running · ${entry.total - entry.pending} of ${entry.total} done`
+  if (entry.state === 'CLOSED') return '—'
+  if (entry.pass > 0) return `✅ Green · ${entry.pass} passed${onDev(r) ? ' · on DEV' : ''}`
+  return '—'
 }
 
 /** The Review cell: a risky marker, then the model of each round ("Claude r1 → Codex r2"). */
@@ -138,6 +161,14 @@ export function findingsText(r: Pick<WaveRepo, 'red' | 'orange' | 'yellow' | 'op
     .sort((a, b) => (a.level === b.level ? 0 : a.level === 'red' ? -1 : 1))
     .map(f => `${f.level === 'red' ? '🔴' : '🟠'} ${f.title.trim()}`)
   return titles.length ? `${counts}: ${titles.join('; ')}` : counts
+}
+
+/** The Local review cell: our own independent review, its rounds and what is still open. */
+export function localReviewText(r: WaveRepo) {
+  const review = reviewText(r)
+  if (review === 'not yet') return review
+  const found = findingsText(r)
+  return `${review} · ${found === 'none' ? 'no open findings' : found}`
 }
 
 const cell = (text: string) => text.replace(/\|/g, '\\|').replace(/\n/g, ' ')
@@ -278,8 +309,7 @@ export const register: Register = on => {
 
     const rows = wave.repos.map(r => {
       const key = r.prNumber && r.repoSlug ? `${r.repoSlug}#${r.prNumber}` : ''
-      const pr = r.pr ? `[#${r.prNumber ?? 'PR'}](${r.pr})` : '—'
-      return `| ${cell(r.name)} | ${cell(r.stage)} | ${pr} | ${ciText(prs[key])} | ${cell(reviewText(r))} | ${cell(findingsText(r))} | ${cell(summaryText(r, prs[key]))} |`
+      return `| ${cell(r.name)} | ${cell(r.stage)} | ${prText(r, prs[key])} | ${cell(localReviewText(r))} | ${cell(ciText(r, prs[key]))} | ${cell(summaryText(r, prs[key]))} |`
     })
     const flags = (wave.flags ?? []).filter(Boolean)
     const keys = ticketKeys(wave.ticket)
@@ -291,8 +321,8 @@ export const register: Register = on => {
       '',
       waveSummaryText(wave, prs),
       '',
-      '| Session | Stage | PR | PR state · CI | Review | Findings | Summary |',
-      '|---|---|---|---|---|---|---|',
+      '| Session | Stage | PR | Local review | CI/CD | Summary |',
+      '|---|---|---|---|---|---|',
       ...rows,
       '',
       '**🚩 Red flags**',

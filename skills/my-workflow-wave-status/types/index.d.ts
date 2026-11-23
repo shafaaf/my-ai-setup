@@ -19,6 +19,8 @@ export type WaveRepo = {
   red?: number
   orange?: number
   yellow?: number
+  /** When CI is red: one short line on what fails and why, written by the coordinator. Clear it once CI is green. */
+  ciNote?: string
   /** 2-3 short plain sentences: code done? tested? reviewed? PR stuck, merged, or waiting for release? */
   summary?: string
   /** Older field; the pane no longer shows it. */
@@ -43,7 +45,18 @@ export type WaveStatus = {
 }
 
 /** Live GitHub state of one PR, keyed by "<repoSlug>#<prNumber>". */
-export type PrLive = { state: string; isDraft: boolean; pass: number; fail: number; pending: number; checkedAt: number }
+export type PrLive = {
+  state: string
+  isDraft: boolean
+  pass: number
+  fail: number
+  pending: number
+  /** Checks that count (skipped ones left out). */
+  total: number
+  /** Names of the failing checks. */
+  failed: string[]
+  checkedAt: number
+}
 
 declare module 'claude-code' {
   interface PluginState {

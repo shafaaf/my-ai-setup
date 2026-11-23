@@ -27,30 +27,50 @@ JIRA = "https://botfood.atlassian.net/browse/"
 
 
 def pr_live(repo):
-    """(state, draft, fail, pending, passed) from gh, or None without a PR."""
+    """(state, draft, fail, pending, passed, failed_names, total) from gh, or None without a PR."""
     n, slug = repo.get("prNumber"), repo.get("repoSlug")
     if not (n and slug):
         return None
     view = gh(["pr", "view", str(n), "--repo", slug, "--json", "state,isDraft", "-q", '.state + " " + (.isDraft|tostring)']).split()
     state, draft = (view + ["?", "false"])[:2]
-    buckets = [] if state in ("MERGED", "CLOSED") else [line.split("\t")[1] for line in gh(["pr", "checks", str(n), "--repo", slug]).splitlines() if "\t" in line]
-    return state, draft == "true", buckets.count("fail"), buckets.count("pending"), buckets.count("pass")
+    rows = [line.split("\t") for line in gh(["pr", "checks", str(n), "--repo", slug]).splitlines() if "\t" in line]
+    buckets = [c[1] for c in rows if len(c) > 1]
+    failed = [c[0].strip() for c in rows if len(c) > 1 and c[1] == "fail"]
+    total = sum(1 for b in buckets if b != "skipping")
+    return state, draft == "true", buckets.count("fail"), buckets.count("pending"), buckets.count("pass"), failed, total
 
 
-def pr_cell(live):
+def pr_cell(r, live):
+    """The PR cell: the link, then merged / closed / draft / ready."""
+    if not r.get("pr"):
+        return "—"
+    link = f"[#{r.get('prNumber', 'PR')}]({r['pr']})"
+    if not live:
+        return link
+    state, draft = live[0], live[1]
+    word = "merged" if state == "MERGED" else "closed" if state == "CLOSED" else "draft" if draft else "ready"
+    return f"{link} · {word}"
+
+
+def ci_cell(r, live):
+    """The CI/CD cell: green, running or red; red says what fails (ciNote, else the failing check names)."""
+    if not r.get("pr"):
+        return "No PR"
     if not live:
         return "—"
-    state, draft, fail, pending, passed = live
-    if state == "MERGED":
-        return "✅ merged"
-    if state == "CLOSED":
-        return "⛔ closed"
-    stage = "📝 draft" if draft else "👀 ready"
+    state, draft, fail, pending, passed, failed, total = live
     if fail:
-        return f"{stage} · 🔴 {fail} failed"
+        shown = ", ".join(failed[:3]) + (f" +{len(failed) - 3} more" if len(failed) > 3 else "")
+        why = (r.get("ciNote") or "").strip() or (f"Failing: {shown}" if shown else "")
+        return f"🔴 Red · {fail} failed" + (f": {why}" if why else "")
     if pending:
-        return f"{stage} · ⏳ {pending} running"
-    return f"{stage} · ✅ {passed} passed" if passed else stage
+        return f"⏳ Running · {total - pending} of {total} done"
+    if state == "CLOSED":
+        return "—"
+    if passed:
+        on_dev = re.search(r"on dev|active on dev|deployed", (r.get("stage") or "").lower())
+        return f"✅ Green · {passed} passed" + (" · on DEV" if on_dev else "")
+    return "—"
 
 
 def summary(r, live):
@@ -58,7 +78,7 @@ def summary(r, live):
     if (r.get("summary") or "").strip():
         return r["summary"].strip()
     stage = (r.get("stage") or "").lower()
-    state, draft, fail, pending, passed = live or ("", False, 0, 0, 0)
+    state, draft, fail, pending, passed = (live or ("", False, 0, 0, 0))[:5]
     merged = state == "MERGED" or re.search(r"\bmerged\b", stage)
     parts = ["Code done and merged." if merged else ("Code written; PR is a draft." if draft else "Code written; PR open.") if r.get("pr") else "No PR."]
     if state == "OPEN":
@@ -81,7 +101,7 @@ def summary(r, live):
 
 def row_progress(r, live):
     stage = (r.get("stage") or "").lower()
-    state, draft, fail, pending, passed = live or ("", False, 0, 0, 0)
+    state, draft, fail, pending, passed = (live or ("", False, 0, 0, 0))[:5]
     if re.search(r"on dev|active on dev|deployed", stage):
         return 1
     if state == "MERGED" or re.search(r"\bmerged\b", stage):
@@ -172,13 +192,13 @@ def main():
     filled = round(pct / 10)
     print(f"**Wave summary** · `{'█' * filled}{'░' * (10 - filled)}` {'about ' if est else ''}{pct}% done · updated {ago(wave.get('updatedAt', ''))}\n")
     print(wave_summary(wave, lives) + "\n")
-    print("| Session | Stage | PR | PR state · CI | Review | Findings | Summary |")
-    print("|---|---|---|---|---|---|---|")
+    print("| Session | Stage | PR | Local review | CI/CD | Summary |")
+    print("|---|---|---|---|---|---|")
     for r, live in zip(repos, lives):
-        pr = f"[#{r.get('prNumber', 'PR')}]({r['pr']})" if r.get("pr") else "—"
         rnd = review_text(r)
         found = findings_text(r)
-        print(f"| {cell(r.get('name'))} | {cell(r.get('stage'))} | {pr} | {pr_cell(live)} | {cell(rnd)} | {cell(found)} | {cell(summary(r, live))} |")
+        local = rnd if rnd == "not yet" else f"{rnd} · {'no open findings' if found == 'none' else found}"
+        print(f"| {cell(r.get('name'))} | {cell(r.get('stage'))} | {pr_cell(r, live)} | {cell(local)} | {cell(ci_cell(r, live))} | {cell(summary(r, live))} |")
     flags = [f for f in wave.get("flags", []) if f]
     print("\n**🚩 Red flags**\n")
     print("\n".join(f"- {f}" for f in flags) if flags else "None.")
