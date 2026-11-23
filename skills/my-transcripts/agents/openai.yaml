@@ -1,0 +1,13 @@
+interface:
+  display_name: "My Transcripts"
+  short_description: "Video notes with adjustable depth and optional screenshots"
+  default_prompt: "Use $my-transcripts on this YouTube link with --deep yes --screenshots yes, preserving memorable wording with simple explanations."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
+policy:
+  products:
+    - "chatgpt"
+    - "codex"
+    - "api"
+    - "atlas"
+  allow_implicit_invocation: false

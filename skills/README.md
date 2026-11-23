@@ -40,6 +40,7 @@ ln -sfn ../mods/skills/README.md ~/.agents/skills/MY-SKILLS.md
 | my-walkthrough-guide | Hands-on walkthroughs, one real example per turn |
 | my-review-all | Reviews every changed repo of a task together |
 | my-hello-interview-botfood-notes | Interview-study notes linking a Hello Interview guide to real BotFood examples |
+| my-transcripts | Timestamped study notes from YouTube links or transcripts |
 
 Skills installed from other people's repos (`npx skills add …`) stay as real folders in `~/.agents/skills` and are **not** in this repo; `npx skills update` refreshes them.
 
