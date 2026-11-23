@@ -12,7 +12,7 @@ test('/wave-pane opens the Wave status pane without a Claude turn', async ($, on
   expect(result?.text).toBe('Wave status pane opened.')
 })
 
-import { ciText, findingsText, localReviewText, prText, reviewTags, reviewText, roundsText } from './register'
+import { ciText, findingsText, localReviewText, nextRound, prText, reviewTags, reviewText, roundsText } from './register'
 
 test('older status files: the Review cell names the model of each round and marks a risky PR', () => {
   expect(reviewText({ reviewModels: ['Claude', 'Codex'], reviewRound: 2 })).toBe('Claude r1 → Codex r2')
@@ -149,6 +149,46 @@ test('the Local review cell ends with passed, or what is still open', () => {
   ).toBe('⚠️ Risky · vault, sign-in · Large · R1 Claude 0 🔴 → R2 Codex 3 🔴 → R3 Codex 0 🔴 · passed')
   expect(
     localReviewText({ ...base, red: 1, openFindings: [{ level: 'red', title: 'No rollback path' }], reviews: [{ round: 1, model: 'Codex', red: 1 }] }),
-  ).toBe('⚠️ Risky · vault, sign-in · Large · R1 Codex 1 🔴 · 🔴 1: 🔴 No rollback path')
+  ).toBe('⚠️ Risky · vault, sign-in · Large · R1 Codex 1 🔴 → R2 Codex (after the fix) · 🔴 1: 🔴 No rollback path')
   expect(localReviewText({ name: 'cea', repo: 'CEA', stage: 's', size: 'small' })).toBe('Small · not yet')
+})
+
+test('the chain ends with the round that is due next', () => {
+  // A 🔴 earns a re-check of the fix by the reviewer that found it.
+  expect(nextRound({ size: 'small', reviews: [{ round: 1, model: 'Claude', red: 1 }] })).toBe('R2 Claude (after the fix)')
+  expect(
+    nextRound({ risky: true, reviews: [{ round: 1, model: 'Claude', red: 0 }, { round: 2, model: 'Codex', red: 1, orange: 1 }] }),
+  ).toBe('R3 Codex (after the fix)')
+  // A risky or large PR whose first model came back clean still owes the other model its round.
+  expect(nextRound({ risky: true, reviews: [{ round: 1, model: 'Claude', red: 0 }] })).toBe('R2 Codex (next)')
+  expect(nextRound({ size: 'large', reviews: [{ round: 1, model: 'Claude', red: 1 }, { round: 2, model: 'Claude', red: 0 }] })).toBe('R3 Codex (next)')
+  // Nothing is due: small and clean, or the other model already came back clean.
+  expect(nextRound({ size: 'small', reviews: [{ round: 1, model: 'Claude', red: 0 }] })).toBe('')
+  expect(nextRound({ risky: true, reviews: [{ round: 1, model: 'Claude', red: 0 }, { round: 2, model: 'Codex', red: 0 }] })).toBe('')
+  expect(nextRound({ risky: true })).toBe('')
+})
+
+test('row 5 of the example: Codex found a 🔴, so its re-check shows as due and nothing says passed', () => {
+  const row = {
+    name: 'cea-migration',
+    repo: 'ContentEvaluationAgent',
+    stage: 'Draft; fixing round 2',
+    risky: true,
+    riskReason: 'migration',
+    size: 'large' as const,
+    reviews: [{ round: 1, model: 'Claude', red: 0 }, { round: 2, model: 'Codex', red: 1, orange: 1 }],
+    red: 1,
+    orange: 1,
+    openFindings: [
+      { level: 'red' as const, title: 'No rollback for the new column' },
+      { level: 'orange' as const, title: 'Missing index on run_id' },
+    ],
+  }
+  expect(localReviewText(row)).toBe(
+    '⚠️ Risky · migration · Large · R1 Claude 0 🔴 → R2 Codex 1 🔴 1 🟠 → R3 Codex (after the fix) · 🔴 1 🟠 1: 🔴 No rollback for the new column; 🟠 Missing index on run_id',
+  )
+  // Fixed but not yet re-checked: still due, and not "passed".
+  expect(localReviewText({ ...row, red: 0, orange: 0, openFindings: [] })).toBe(
+    '⚠️ Risky · migration · Large · R1 Claude 0 🔴 → R2 Codex 1 🔴 1 🟠 → R3 Codex (after the fix)',
+  )
 })

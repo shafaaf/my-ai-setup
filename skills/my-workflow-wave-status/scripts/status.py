@@ -167,11 +167,33 @@ def review_tags(r):
     return " · ".join(tags)
 
 
+def other_model(model):
+    return "Codex" if re.search("claude", model, re.I) else "Claude" if re.search("codex", model, re.I) else "other model"
+
+
+def next_round(r):
+    """The round due next, or "": a 🔴 earns a re-check of the fix by the same reviewer; a risky or large PR owes the other model a round."""
+    rounds = [x for x in (r.get("reviews") or []) if (x.get("model") or "").strip()]
+    if not rounds:
+        return ""
+    last = rounds[-1]
+    n = (last.get("round") or len(rounds)) + 1
+    if (last.get("red") or 0) > 0:
+        return f"R{n} {last['model'].strip()} (after the fix)"
+    first = rounds[0]["model"].strip()
+    other_done = any(x["model"].strip() != first for x in rounds)
+    if (r.get("risky") or r.get("size") == "large") and not other_done:
+        return f"R{n} {other_model(first)} (next)"
+    return ""
+
+
 def rounds_text(r):
-    """The rounds: "R1 Claude 0 🔴 → R2 Codex 3 🔴", with 🟠 only when a round found some."""
+    """The rounds: "R1 Claude 0 🔴 → R2 Codex 3 🔴 → R3 Codex (after the fix)", with 🟠 only when a round found some."""
     rounds = [x for x in (r.get("reviews") or []) if (x.get("model") or "").strip()]
     if rounds:
-        return " → ".join(f"R{x.get('round')} {x['model'].strip()} {x.get('red') or 0} 🔴" + (f" {x['orange']} 🟠" if x.get("orange") else "") for x in rounds)
+        steps = [f"R{x.get('round')} {x['model'].strip()} {x.get('red') or 0} 🔴" + (f" {x['orange']} 🟠" if x.get("orange") else "") for x in rounds]
+        nxt = next_round(r)
+        return " → ".join(steps + ([nxt] if nxt else []))
     models = [m.strip() for m in (r.get("reviewModels") or []) if m and m.strip()]
     if models:
         return " → ".join(f"{m} r{i}" for i, m in enumerate(models, 1))
@@ -191,6 +213,8 @@ def local_review_text(r):
     found = findings_text(r)
     if found != "none":
         return f"{review} · {found}"
+    if next_round(r):
+        return review
     last = (r.get("reviews") or [None])[-1]
     passed = bool(last) and not last.get("red") and not last.get("orange")
     return f"{review} · {'passed' if passed else 'no open findings'}"

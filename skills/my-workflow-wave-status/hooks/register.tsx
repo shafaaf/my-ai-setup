@@ -146,13 +146,34 @@ export function reviewTags(r: Pick<WaveRepo, 'risky' | 'riskReason' | 'size'>) {
   return tags.join(' · ')
 }
 
-/** The rounds: "R1 Claude 0 🔴 → R2 Codex 3 🔴", with 🟠 only when a round found some. */
-export function roundsText(r: Pick<WaveRepo, 'reviews' | 'reviewModels' | 'reviewRound'>) {
+const otherModel = (model: string) => (/claude/i.test(model) ? 'Codex' : /codex/i.test(model) ? 'Claude' : 'other model')
+
+/**
+ * The round that is due next, or '' when none is. A round that found a 🔴
+ * earns a re-check of the fix by the same reviewer. A risky or large PR whose
+ * first model came back clean still owes the other model its round.
+ */
+export function nextRound(r: Pick<WaveRepo, 'reviews' | 'risky' | 'size'>) {
+  const rounds = (r.reviews ?? []).filter(x => x.model?.trim())
+  if (!rounds.length) return ''
+  const last = rounds[rounds.length - 1]
+  const n = (last.round ?? rounds.length) + 1
+  if ((last.red ?? 0) > 0) return `R${n} ${last.model.trim()} (after the fix)`
+  const first = rounds[0].model.trim()
+  const otherDone = rounds.some(x => x.model.trim() !== first)
+  if ((r.risky || r.size === 'large') && !otherDone) return `R${n} ${otherModel(first)} (next)`
+  return ''
+}
+
+/** The rounds: "R1 Claude 0 🔴 → R2 Codex 3 🔴 → R3 Codex (after the fix)", with 🟠 only when a round found some. */
+export function roundsText(r: Pick<WaveRepo, 'reviews' | 'reviewModels' | 'reviewRound' | 'risky' | 'size'>) {
   const rounds = (r.reviews ?? []).filter(x => x.model?.trim())
   if (rounds.length) {
-    return rounds
-      .map(x => `R${x.round} ${x.model.trim()} ${x.red ?? 0} 🔴${x.orange ? ` ${x.orange} 🟠` : ''}`)
-      .join(' → ')
+    const next = nextRound(r)
+    return [
+      ...rounds.map(x => `R${x.round} ${x.model.trim()} ${x.red ?? 0} 🔴${x.orange ? ` ${x.orange} 🟠` : ''}`),
+      ...(next ? [next] : []),
+    ].join(' → ')
   }
   const models = (r.reviewModels ?? []).map(m => m.trim()).filter(Boolean)
   if (models.length) return models.map((m, i) => `${m} r${i + 1}`).join(' → ')
@@ -185,6 +206,7 @@ export function localReviewText(r: WaveRepo) {
   if (roundsText(r) === 'not yet') return review
   const found = findingsText(r)
   if (found !== 'none') return `${review} · ${found}`
+  if (nextRound(r)) return review
   const last = r.reviews?.[r.reviews.length - 1]
   const passed = last && !last.red && !last.orange
   return `${review} · ${passed ? 'passed' : 'no open findings'}`
