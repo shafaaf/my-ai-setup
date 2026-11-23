@@ -47,6 +47,15 @@ I found these mods in three videos. Mods by other people are **not** in this rep
 | my-review-all | Reviews every changed repo of a task together |
 | my-hello-interview-botfood-notes | Interview-study notes linking a Hello Interview guide to real BotFood examples |
 
+**Depends on: the BotFood `botfood` plugin.** `my-review-all` (and the review step of `my-workflow-wave`) doesn't review code itself. It finds every changed repo in a task folder and runs the `botfood` plugin's reviewers side by side. That plugin's `pr-review` skill sets the review rules and the severity levels (🔴 critical/high, 🟠 medium, 🟡 low, 🔵 info), and its `auto-review` skill runs the review-and-fix loop. The plugin is BotFood's own (by Brendan Stennett) and lives in BotFood's internal plugin marketplace, so it isn't copied here and only BotFood org members can install it:
+
+```
+/plugin marketplace add botfoodai/botfood-claude-plugins
+/plugin install botfood@botfood
+```
+
+Without it, `my-review-all`'s scan step reports the plugin as missing, and there is no review to run.
+
 How to install them for Claude and Codex, and the rules for writing them, are in [`skills/README.md`](skills/README.md).
 
 ---
