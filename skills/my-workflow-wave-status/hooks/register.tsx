@@ -137,15 +137,31 @@ export function ciText(r: Pick<WaveRepo, 'pr' | 'stage' | 'ciNote'>, entry: PrLi
   return '—'
 }
 
-/** The Review cell: a risky marker, then the model of each round ("Claude r1 → Codex r2"). */
-export function reviewText(r: Pick<WaveRepo, 'risky' | 'reviewModels' | 'reviewRound'>) {
+/** The tags in front of the rounds: "⚠️ Risky · vault, sign-in", "Large", "Small". */
+export function reviewTags(r: Pick<WaveRepo, 'risky' | 'riskReason' | 'size'>) {
+  const tags: string[] = []
+  if (r.risky) tags.push(r.riskReason?.trim() ? `⚠️ Risky · ${r.riskReason.trim()}` : '⚠️ Risky')
+  if (r.size === 'large') tags.push('Large')
+  else if (r.size === 'small' && !r.risky) tags.push('Small')
+  return tags.join(' · ')
+}
+
+/** The rounds: "R1 Claude 0 🔴 → R2 Codex 3 🔴", with 🟠 only when a round found some. */
+export function roundsText(r: Pick<WaveRepo, 'reviews' | 'reviewModels' | 'reviewRound'>) {
+  const rounds = (r.reviews ?? []).filter(x => x.model?.trim())
+  if (rounds.length) {
+    return rounds
+      .map(x => `R${x.round} ${x.model.trim()} ${x.red ?? 0} 🔴${x.orange ? ` ${x.orange} 🟠` : ''}`)
+      .join(' → ')
+  }
   const models = (r.reviewModels ?? []).map(m => m.trim()).filter(Boolean)
-  const rounds = models.length
-    ? models.map((m, i) => `${m} r${i + 1}`).join(' → ')
-    : r.reviewRound
-      ? `round ${r.reviewRound}`
-      : 'not yet'
-  return r.risky ? `⚠️ risky · ${rounds}` : rounds
+  if (models.length) return models.map((m, i) => `${m} r${i + 1}`).join(' → ')
+  return r.reviewRound ? `round ${r.reviewRound}` : 'not yet'
+}
+
+/** The Review part of the Local review cell: tags, then the rounds. */
+export function reviewText(r: Pick<WaveRepo, 'risky' | 'riskReason' | 'size' | 'reviews' | 'reviewModels' | 'reviewRound'>) {
+  return [reviewTags(r), roundsText(r)].filter(Boolean).join(' · ')
 }
 
 /** The Findings cell: the open counts, then the one-line titles of open 🔴/🟠 findings. */
@@ -166,9 +182,12 @@ export function findingsText(r: Pick<WaveRepo, 'red' | 'orange' | 'yellow' | 'op
 /** The Local review cell: our own independent review, its rounds and what is still open. */
 export function localReviewText(r: WaveRepo) {
   const review = reviewText(r)
-  if (review === 'not yet') return review
+  if (roundsText(r) === 'not yet') return review
   const found = findingsText(r)
-  return `${review} · ${found === 'none' ? 'no open findings' : found}`
+  if (found !== 'none') return `${review} · ${found}`
+  const last = r.reviews?.[r.reviews.length - 1]
+  const passed = last && !last.red && !last.orange
+  return `${review} · ${passed ? 'passed' : 'no open findings'}`
 }
 
 const cell = (text: string) => text.replace(/\|/g, '\\|').replace(/\n/g, ' ')

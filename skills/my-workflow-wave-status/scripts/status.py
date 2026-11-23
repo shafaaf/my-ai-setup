@@ -154,14 +154,46 @@ def ago(iso):
 
 
 
-def review_text(r):
-    """The Review cell: a risky marker, then the model of each round ("Claude r1 → Codex r2")."""
+def review_tags(r):
+    """The tags in front of the rounds: "⚠️ Risky · vault, sign-in", "Large", "Small"."""
+    tags = []
+    if r.get("risky"):
+        why = (r.get("riskReason") or "").strip()
+        tags.append(f"⚠️ Risky · {why}" if why else "⚠️ Risky")
+    if r.get("size") == "large":
+        tags.append("Large")
+    elif r.get("size") == "small" and not r.get("risky"):
+        tags.append("Small")
+    return " · ".join(tags)
+
+
+def rounds_text(r):
+    """The rounds: "R1 Claude 0 🔴 → R2 Codex 3 🔴", with 🟠 only when a round found some."""
+    rounds = [x for x in (r.get("reviews") or []) if (x.get("model") or "").strip()]
+    if rounds:
+        return " → ".join(f"R{x.get('round')} {x['model'].strip()} {x.get('red') or 0} 🔴" + (f" {x['orange']} 🟠" if x.get("orange") else "") for x in rounds)
     models = [m.strip() for m in (r.get("reviewModels") or []) if m and m.strip()]
     if models:
-        rounds = " → ".join(f"{m} r{i}" for i, m in enumerate(models, 1))
-    else:
-        rounds = f"round {r['reviewRound']}" if r.get("reviewRound") else "not yet"
-    return f"⚠️ risky · {rounds}" if r.get("risky") else rounds
+        return " → ".join(f"{m} r{i}" for i, m in enumerate(models, 1))
+    return f"round {r['reviewRound']}" if r.get("reviewRound") else "not yet"
+
+
+def review_text(r):
+    """Tags, then the rounds."""
+    return " · ".join(x for x in (review_tags(r), rounds_text(r)) if x)
+
+
+def local_review_text(r):
+    """The Local review cell: tags, rounds, then what is still open (or passed)."""
+    review = review_text(r)
+    if rounds_text(r) == "not yet":
+        return review
+    found = findings_text(r)
+    if found != "none":
+        return f"{review} · {found}"
+    last = (r.get("reviews") or [None])[-1]
+    passed = bool(last) and not last.get("red") and not last.get("orange")
+    return f"{review} · {'passed' if passed else 'no open findings'}"
 
 
 def findings_text(r):
@@ -195,9 +227,7 @@ def main():
     print("| Session | Stage | PR | Local review | CI/CD | Summary |")
     print("|---|---|---|---|---|---|")
     for r, live in zip(repos, lives):
-        rnd = review_text(r)
-        found = findings_text(r)
-        local = rnd if rnd == "not yet" else f"{rnd} · {'no open findings' if found == 'none' else found}"
+        local = local_review_text(r)
         print(f"| {cell(r.get('name'))} | {cell(r.get('stage'))} | {pr_cell(r, live)} | {cell(local)} | {cell(ci_cell(r, live))} | {cell(summary(r, live))} |")
     flags = [f for f in wave.get("flags", []) if f]
     print("\n**🚩 Red flags**\n")

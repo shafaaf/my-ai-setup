@@ -22,7 +22,9 @@ Keep `~/Desktop/bot-food-work/worktrees/<task>/WAVE-STATUS.json` current from st
   "summary": "<2-3 short plain sentences on the whole wave>", "percent": 60,
   "repos": [ { "name": "<child name>", "repo": "web", "stage": "PR open, fixing round-1 findings",
                "pr": "<url>", "prNumber": 123, "repoSlug": "botfoodai/web",
-               "risky": true, "reviewRound": 2, "reviewModels": ["Claude", "Codex"],
+               "size": "large", "risky": true, "riskReason": "vault, sign-in",
+               "reviews": [ { "round": 1, "model": "Claude", "red": 0, "orange": 0, "yellow": 2 },
+                            { "round": 2, "model": "Codex", "red": 1, "orange": 0, "yellow": 0 } ],
                "red": 1, "orange": 0, "yellow": 2,
                "openFindings": [ { "level": "red", "title": "<one-line title>" } ],
                "ciNote": "<only while CI is red: what fails and why, one line>",
@@ -31,7 +33,7 @@ Keep `~/Desktop/bot-food-work/worktrees/<task>/WAVE-STATUS.json` current from st
   "next": ["<next step>", "<next step, e.g. wave 2: ...>"] }
 ```
 
-`summary` is what the user reads first: 2-3 short sentences in easy words saying where that piece stands: is the code done, has it been tested, has the independent review run, and is the PR stuck, merged or waiting for a release. No paths, worktrees or SHAs. Example: "Code done and tested. Review round 3 passed. PR waits on one last test before merge." The top-level `summary` is the same idea for the whole wave, shown at the top of the pane with `percent` (0-100, how much of the whole wave is done, counting what is left: reviews, merges, releases, QA, later waves). Example: "3 of 4 pieces are merged and 2 are on DEV. The last desktop PR waits on one test, then 4702 still needs its PR. Paused for the night." For each repo, `risky` marks a risky PR (see step 4), `reviewModels` names the model that ran each round in order (the pane shows "Claude r1 → Codex r2"), and `openFindings` lists every 🔴/🟠 still open as `{ "level": "red" | "orange", "title": "<one line>" }`. Update all three after every review round and drop a finding once it's fixed; 🟡 stay as a count only. The pane's **Local review** column shows these, and its **CI/CD** column reads each PR's checks from GitHub itself (green, running, or red with the failing check names). When CI goes red, write `ciNote` as soon as you know why (e.g. "Windows BDD fails at app launch, 3 runs in a row; passed on 5 earlier commits"), and remove it once CI is green again. `next` is the list of next steps, shown under the red flags; name a planned next wave there. Put several tickets in `ticket` as comma-separated keys; the pane shows each as its own link.
+`summary` is what the user reads first: 2-3 short sentences in easy words saying where that piece stands: is the code done, has it been tested, has the independent review run, and is the PR stuck, merged or waiting for a release. No paths, worktrees or SHAs. Example: "Code done and tested. Review round 3 passed. PR waits on one last test before merge." The top-level `summary` is the same idea for the whole wave, shown at the top of the pane with `percent` (0-100, how much of the whole wave is done, counting what is left: reviews, merges, releases, QA, later waves). Example: "3 of 4 pieces are merged and 2 are on DEV. The last desktop PR waits on one test, then 4702 still needs its PR. Paused for the night." For each repo, `size` (`"small"` or `"large"`), `risky` and a short `riskReason` are the step-4 tags; `reviews` gets one entry per finished round (its number, the model, and what that round found); `red`/`orange`/`yellow` count what is still open; and `openFindings` lists every 🔴/🟠 still open as `{ "level": "red" | "orange", "title": "<one line>" }`. The pane shows them as "Risky · Large · R1 Claude 0 🔴 → R2 Codex 1 🔴". Add the round entry and update the open findings after every round, and drop a finding once it's fixed; 🟡 stay as a count only. The pane's **Local review** column shows these, and its **CI/CD** column reads each PR's checks from GitHub itself (green, running, or red with the failing check names). When CI goes red, write `ciNote` as soon as you know why (e.g. "Windows BDD fails at app launch, 3 runs in a row; passed on 5 earlier commits"), and remove it once CI is green again. `next` is the list of next steps, shown under the red flags; name a planned next wave there. Put several tickets in `ticket` as comma-separated keys; the pane shows each as its own link.
 
 ## 0. Tickets in scope
 Work only with the ticket(s) this wave is for: the BOTFOOD keys in the arguments, the plan or the conversation. Never scan, change or report other tickets on the board; the user may have tickets there they aren't working on.
@@ -109,7 +111,7 @@ Sections 6–8 are always present, even when the answer is "None".
 ## 4. Review
 **Draft first:** every PR stays a draft while it's reviewed. CI, desktop BDD and Auto-fix run on the draft and screenshots get their commit links, but reviewers aren't pinged with unreviewed code. Code changes from review are normal: the child squashes each fix into the PR's one commit and force-pushes, CI re-runs, and the next round reviews the new commit (re-point any commit-SHA screenshot links).
 
-Once every repo has its commits (pushed or local), run `/my-review-all <TICKET>` across the task folder: a fresh independent reviewer per repo. **One round = one reviewer**; never two reviewers in the same round. After each round the child fixes every 🔴 and 🟠 and any cheap 🟡; other 🟡 go under the PR's Follow-ups (tell the user in one line). Rounds per repo (this replaces `/my-review-all`'s own cap):
+Once every repo has its commits (pushed or local), run `/my-review-all <TICKET>` across the task folder: a fresh independent reviewer per repo. **One round = one reviewer**: never run two reviewers in the same round, side by side or otherwise. After each round the child fixes every 🔴 and 🟠 and any cheap 🟡; other 🟡 go under the PR's Follow-ups (tell the user in one line). Rounds per repo (this replaces `/my-review-all`'s own cap):
 
 **Same model** is the tool running this wave; **other model** is the other one:
 
@@ -118,13 +120,19 @@ Once every repo has its commits (pushed or local), run `/my-review-all <TICKET>`
 | Claude Code | Claude | Codex | the `codex:codex-rescue` agent; use its adversarial/design-challenge mode for contracts |
 | Codex | Codex | Claude | `claude -p` with the `botfood:pr-review` skill (see `codex.md`) |
 
-| PR | Round 1 | Round 2 | More rounds |
-| --- | --- | --- | --- |
-| Normal | Same model | Only if round 1 found a 🔴: same model on the fix. No 🔴 → stop | Only while a 🔴 is still open, same model |
-| **Risky**: security-sensitive files (vault, sign-in probe, auth), a cross-repo contract or API, a database migration, billing | Same model | No 🔴 in round 1 → **other model**. A 🔴 in round 1 → same model on the fix, then the other model once no 🔴 is left | A 🔴 from the other model earns one more round on the fix |
+**Tag each PR before round 1** and record the tag in the status file:
+- **Risky:** it touches security-sensitive files (vault, sign-in probe, auth), a cross-repo contract or API, a database migration, or billing.
+- **Large:** more than 400 changed lines or more than 15 files (`git diff --shortstat origin/main...HEAD`).
+- **Small:** neither. A PR can be both risky and large.
 
-- Normal PRs never use the other model. Risky PRs always get exactly one other-model round once the same model finds no 🔴.
-- Tell the user in one line each time a 🔴 earns an extra round, naming the model.
+| PR | Review flow |
+| --- | --- |
+| **Small** | Round 1: same model. No 🔴 → done. A 🔴 → the child fixes it and the same model checks the fix, again while a 🔴 is open. Never the other model. |
+| **Risky or large** | Round 1: same model, again on each fix while it finds a 🔴. Once it finds no 🔴: **the other model**. A 🔴 from the other model → the child fixes it and **the other model alone** checks again, until it finds no 🔴. The same model doesn't come back. |
+
+- Each other-model re-check reviews **every commit since its last round**, not only the 🔴 it raised, so a large fix is never left unreviewed.
+- A round that is cut off before it finishes (usage limit, timeout) doesn't count: run it again with the same model.
+- Tell the user in one line each time a 🔴 earns another round, naming the model.
 
 Send each repo's 🔴/🟠/🟡 to its child to fix (tests first, then squash the fix into the PR's one commit and force-push with `--force-with-lease`). If the review tool commits each round, squash those commits too before pushing. The coordinator decides any judgement calls and records them in the plan. A 🟡 that needs no code change becomes a PR-description note (e.g. deploy order).
 

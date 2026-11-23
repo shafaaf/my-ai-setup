@@ -12,12 +12,12 @@ test('/wave-pane opens the Wave status pane without a Claude turn', async ($, on
   expect(result?.text).toBe('Wave status pane opened.')
 })
 
-import { ciText, findingsText, localReviewText, prText, reviewText } from './register'
+import { ciText, findingsText, localReviewText, prText, reviewTags, reviewText, roundsText } from './register'
 
-test('the Review cell names the model of each round and marks a risky PR', () => {
+test('older status files: the Review cell names the model of each round and marks a risky PR', () => {
   expect(reviewText({ reviewModels: ['Claude', 'Codex'], reviewRound: 2 })).toBe('Claude r1 → Codex r2')
-  expect(reviewText({ risky: true, reviewModels: ['Claude'] })).toBe('⚠️ risky · Claude r1')
-  expect(reviewText({ risky: true })).toBe('⚠️ risky · not yet')
+  expect(reviewText({ risky: true, reviewModels: ['Claude'] })).toBe('⚠️ Risky · Claude r1')
+  expect(reviewText({ risky: true })).toBe('⚠️ Risky · not yet')
   // An older status file without reviewModels still shows its round count.
   expect(reviewText({ reviewRound: 3 })).toBe('round 3')
   expect(reviewText({})).toBe('not yet')
@@ -75,7 +75,7 @@ test('the pane shows the models, the risky marker and open finding titles', asyn
   const text = String(md?.children ?? md?.text ?? '')
   expect(text).toContain('| Session | Stage | PR | Local review | CI/CD | Summary |')
   expect(text).not.toContain('Findings')
-  expect(text).toContain('⚠️ risky · Claude r1 → Codex r2 · 🔴 1: 🔴 Old desktops break on the new field')
+  expect(text).toContain('⚠️ Risky · Claude r1 → Codex r2 · 🔴 1: 🔴 Old desktops break on the new field')
   // This row has no PR, so CI/CD says so.
   expect(text).toContain('| No PR |')
   await pane.unmount()
@@ -118,4 +118,37 @@ test('the Local review cell joins the rounds and what is still open', () => {
   expect(localReviewText({ ...base })).toBe('not yet')
   expect(localReviewText({ ...base, reviewModels: ['Claude'] })).toBe('Claude r1 · no open findings')
   expect(localReviewText({ ...base, reviewRound: 2, yellow: 1 })).toBe('round 2 · 🟡 1')
+})
+
+test('the tags say risky (with why), large or small', () => {
+  expect(reviewTags({ risky: true, riskReason: 'vault, sign-in', size: 'large' })).toBe('⚠️ Risky · vault, sign-in · Large')
+  expect(reviewTags({ risky: true })).toBe('⚠️ Risky')
+  // A risky PR runs the risky flow, so "Small" would only confuse.
+  expect(reviewTags({ risky: true, size: 'small' })).toBe('⚠️ Risky')
+  expect(reviewTags({ size: 'small' })).toBe('Small')
+  expect(reviewTags({ size: 'large' })).toBe('Large')
+  expect(reviewTags({})).toBe('')
+})
+
+test('each round shows its number, the model and how many 🔴 it found', () => {
+  const reviews = [
+    { round: 1, model: 'Claude', red: 0, yellow: 2 },
+    { round: 2, model: 'Codex', red: 3 },
+    { round: 3, model: 'Codex', red: 1, orange: 1 },
+    { round: 4, model: 'Codex', red: 0 },
+  ]
+  expect(roundsText({ reviews })).toBe('R1 Claude 0 🔴 → R2 Codex 3 🔴 → R3 Codex 1 🔴 1 🟠 → R4 Codex 0 🔴')
+  // reviews wins over the older fields.
+  expect(roundsText({ reviews: [{ round: 1, model: 'Claude' }], reviewModels: ['X', 'Y'], reviewRound: 5 })).toBe('R1 Claude 0 🔴')
+})
+
+test('the Local review cell ends with passed, or what is still open', () => {
+  const base = { name: 'desktop', repo: 'RaLHF-local', stage: 'Merged', risky: true, riskReason: 'vault, sign-in', size: 'large' as const }
+  expect(
+    localReviewText({ ...base, reviews: [{ round: 1, model: 'Claude', red: 0 }, { round: 2, model: 'Codex', red: 3 }, { round: 3, model: 'Codex', red: 0 }] }),
+  ).toBe('⚠️ Risky · vault, sign-in · Large · R1 Claude 0 🔴 → R2 Codex 3 🔴 → R3 Codex 0 🔴 · passed')
+  expect(
+    localReviewText({ ...base, red: 1, openFindings: [{ level: 'red', title: 'No rollback path' }], reviews: [{ round: 1, model: 'Codex', red: 1 }] }),
+  ).toBe('⚠️ Risky · vault, sign-in · Large · R1 Codex 1 🔴 · 🔴 1: 🔴 No rollback path')
+  expect(localReviewText({ name: 'cea', repo: 'CEA', stage: 's', size: 'small' })).toBe('Small · not yet')
 })

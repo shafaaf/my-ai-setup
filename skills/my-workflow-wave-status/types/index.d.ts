@@ -1,3 +1,6 @@
+/** One finished review round. */
+export type ReviewRound = { round: number; model: string; red?: number; orange?: number; yellow?: number }
+
 /** One open review finding: its colour and a one-line title. */
 export type OpenFinding = { level: 'red' | 'orange'; title: string }
 
@@ -10,10 +13,16 @@ export type WaveRepo = {
   prNumber?: number
   repoSlug?: string
   reviewRound?: number
-  /** The model that ran each review round, in order, e.g. ["Claude", "Codex"]. */
+  /** Older field: the model of each round. `reviews` replaces it. */
   reviewModels?: string[]
+  /** One entry per finished review round: its number, the model, and what that round found. */
+  reviews?: ReviewRound[]
+  /** "large" over 400 changed lines or 15 files, else "small". */
+  size?: 'small' | 'large'
   /** True for a risky PR (vault, sign-in probe, auth, cross-repo contract or API, migration, billing). */
   risky?: boolean
+  /** Why it is risky, in a few words, e.g. "vault, sign-in". */
+  riskReason?: string
   /** One-line titles of the 🔴/🟠 findings still open. */
   openFindings?: OpenFinding[]
   red?: number
