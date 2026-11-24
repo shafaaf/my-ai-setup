@@ -167,7 +167,9 @@ When the user says QA is done (their words in chat, not a child's or a note's):
 3. Update the plan note's Status to Done, and tell the user in one line, repeating the follow-ups.
 
 ### Follow-ups
-Keep one running list of follow-ups through the wave: work that is needed or may be needed but is out of this ticket's scope (review 🟡 left over, gaps QA found, deferred parts, risks to watch). Each item says what, why, and whether it is **needed** or **maybe**. Show it in four places:
+Keep one running list of follow-ups through the wave: work that is needed or may be needed but is out of this ticket's scope (review 🟡 left over, gaps QA found, deferred parts, risks to watch, anything left pending). Rate each item with the review colours: 🔴 **major** (could let something bad through, break users, or block the next change), 🟠 **worth doing**, 🟡 **minor or nit**. Each item says what, why, and its colour.
+
+Once all the code is merged and on ralhf-dev (QA pending or done), always show the list as a **table sorted from most major to least** (🔴, then 🟠, then 🟡), with the columns #, Level, Follow-up and Why. Show it in four places:
 1. **The plan note:** a "Follow-ups" section, kept current from step 7 on.
 2. **The QA hand-over (step 8):** tell the user the list.
 3. **The Done message (step 9):** tell the user the list again.
