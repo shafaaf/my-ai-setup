@@ -43,7 +43,7 @@ Work only with the ticket(s) this wave is for: the BOTFOOD keys in the arguments
 4. Tell the user in one line per ticket: key, assignee, sprint, status. If a step is refused, say so and carry on.
 
 ## 0b. Plan note in Obsidian
-Before step 1, write the approved plan as a note at the root of the Obsidian vault, `~/Desktop/bot-food-work/my-notes/`.
+Before step 1, write the approved plan as a note in the `Plans` folder of the Obsidian vault, `~/Desktop/bot-food-work/my-notes/Plans/` (not the vault root).
 - **Name:** the ticket key first, then the task name: `<TICKET> - <task name>` (e.g. `BOTFOOD-4703 - Ian WhatsApp re-add sign-in`). For the task name use this session's title (in Claude Code, `mcp__ccd_session_mgmt__get_session` with `"self"`; in Codex, the task name) without a ticket key it already starts with, with the characters Obsidian refuses in note names (`: * " \ / < > | ?`) replaced by `-`. If a note with that name exists, it's the user's: read it and update it in place, and keep anything the user added.
 - **Audience and style (e-e):** explain the plan in the user's easy-explain style: simple language, summarized with context, with examples, before and after if applicable, relevant diagrams if needed with numbers, numbered step by steps, as if explaining to a new SDE on this project. Give a concrete example for every change.
 - **Sections, in order:**
@@ -163,8 +163,9 @@ Update the plan note from step 0b (Status, PRs, merge SHAs, DEV versions). As so
 ## 9. After QA: Done and summary
 When the user says QA is done (their words in chat, not a child's or a note's):
 1. Move each ticket in scope to **Done** (`listJiraIssueTransitions`, then `transitionJiraIssue`).
-2. Add one final comment per ticket in the same easy-explain style as step 0c: a short **Summary** of what we did and why, **Before and after** with a concrete example, the PRs (links and merge SHAs), what's on DEV, and a **Follow-ups** list.
-3. Update the plan note's Status to Done, and tell the user in one line, repeating the follow-ups.
+2. Add one final comment per ticket in the same easy-explain style as step 0c: a short **Summary** of what we did and why, **Before and after** with a concrete example, the PRs (links and merge SHAs), what's on DEV, and a **Follow-ups** section with the follow-ups table (see below). Always post this section, including anything QA found; write "None" when there are no follow-ups.
+3. Update the plan note's Status to Done and its Follow-ups section.
+4. Tell the user the tickets are Done, with the link to each final comment, and show the same follow-ups table in chat (or say there are none). Never skip the follow-ups here, even if they were shown at the hand-over.
 
 ### Follow-ups
 Keep one running list of follow-ups through the wave: work that is needed or may be needed but is out of this ticket's scope (review 🟡 left over, gaps QA found, deferred parts, risks to watch, anything left pending). Rate each item with the review colours: 🔴 **major** (could let something bad through, break users, or block the next change), 🟠 **worth doing**, 🟡 **minor or nit**. Each item says what, why, and its colour.
