@@ -11,6 +11,12 @@ The shortcuts and Claude settings I use every day.
 | Screenshot into **Codex** (Appshots) | **Shift + Shift** (both together) |
 | Screenshot into **Claude** ([claude-screenshot-hotkey](https://github.com/shafaaf/claude-screenshot-hotkey)) | **⌘ + ⌘** (both together)<br>**Alt + Alt** on the GameSir keyboard |
 
+### Voice
+
+| What it does | Shortcut |
+| --- | --- |
+| Opens the native voice prompt (dictation) in **Claude Code** and **Codex** | **⌘ + P** |
+
 ### Mouse
 
 | What it does | Button |
